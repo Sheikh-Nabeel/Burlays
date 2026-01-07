@@ -5,10 +5,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useLocation } from "../hooks/useLocation";
 
 const COLORS = {
-  primary: "#CF0A0A",
-  darkBg: "#0F0F10",
+  primary: "#FFC72C",
+  darkBg: "#000000",
   white: "#FFFFFF",
-  gray: "#9CA3AF",
+  gray: "#F1F3F4",
 };
 
 const CartScreen = ({ onClose }) => {
@@ -61,7 +61,7 @@ const CartScreen = ({ onClose }) => {
               alt="Empty Cart"
               className="w-36 h-36 sm:w-44 sm:h-44 mb-6 opacity-80 animate-bounce"
             />
-            <p className="text-lg font-semibold text-red-500">
+            <p className="text-lg font-semibold text-[#FFC72C]">
               Your cart is empty!
             </p>
             <p className="text-gray-400 mt-2 text-sm">
@@ -75,7 +75,7 @@ const CartScreen = ({ onClose }) => {
               return (
                 <div
                   key={index}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl bg-[#1a1a1a]/70 border border-gray-700 shadow-lg hover:shadow-2xl transition-all duration-300 hover:border-red-600 backdrop-blur-md group"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl bg-[#1E1E1E]/70 border border-gray-700 shadow-lg hover:shadow-2xl transition-all duration-300 hover:border-[#FFC72C] backdrop-blur-md group"
                 >
                   {/* Product Info */}
                   <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -87,7 +87,7 @@ const CartScreen = ({ onClose }) => {
                         alt={item.name || "Product"}
                         className="w-20 h-20 object-cover rounded-xl border border-gray-700 group-hover:scale-105 transition-transform duration-300"
                       />
-                      <span className="absolute -top-2 -right-2 bg-red-600 text-xs px-2 py-0.5 rounded-full shadow">
+                      <span className="absolute -top-2 -right-2 bg-[#FFC72C] text-black text-xs px-2 py-0.5 rounded-full shadow">
                         {item.quantity}
                       </span>
                     </div>
@@ -139,9 +139,9 @@ const CartScreen = ({ onClose }) => {
 
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="p-2 rounded-full bg-red-600/20 hover:bg-red-600/40 transition transform hover:scale-110"
+                      className="p-2 rounded-full bg-[#FFC72C]/20 hover:bg-[#FFC72C]/40 transition transform hover:scale-110"
                     >
-                      <FaTrash size={18} className="text-red-500" />
+                      <FaTrash size={18} className="text-[#FFC72C]" />
                     </button>
                   </div>
                 </div>

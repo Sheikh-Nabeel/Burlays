@@ -2,19 +2,14 @@
 import React, { useEffect, useState } from "react";
 import { FaArrowRight } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { getCategories } from "../utils/constants";
 
 const CategoriesGrid = () => {
   const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const snap = await getDocs(collection(db, "Web_Categories"));
-      setCategories(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    };
-    fetchCategories();
+    setCategories(getCategories());
   }, []);
 
   return (
@@ -28,17 +23,17 @@ const CategoriesGrid = () => {
             <div
               key={cat.id}
               onClick={() => navigate(`/category/${cat.id}`)}
-              className="relative cursor-pointer rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-red-500/80"
+              className="relative cursor-pointer rounded-xl overflow-hidden hover:shadow-2xl hover:ring-2 hover:ring-[#FFC72C]"
             >
               <img
                 src={cat.imageUrl}
-                alt={cat.categoryName}
+                alt={cat.name}
                 className="w-full h-52 md:h-96 object-cover"
               />
               <div className="absolute bottom-0 w-full bg-black/60 py-3 text-center">
-                <h3 className="text-white font-bold">{cat.categoryName}</h3>
+                <h3 className="text-white font-bold">{cat.name}</h3>
               </div>
-              <div className="absolute top-4 right-4 bg-red-600 p-2 rounded-full text-white">
+              <div className="absolute top-4 right-4 bg-[#FFC72C] p-2 rounded-full text-black">
                 <FaArrowRight />
               </div>
             </div>

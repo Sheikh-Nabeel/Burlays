@@ -34,7 +34,7 @@ const Footer = () => {
               <li>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-primary transition-colors"
+                  className="text-gray-400 hover:text-[#FFC72C] transition-colors"
                 >
                   Home
                 </a>
@@ -42,7 +42,7 @@ const Footer = () => {
               <li>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-primary transition-colors"
+                  className="text-gray-400 hover:text-[#FFC72C] transition-colors"
                 >
                   Products
                 </a>
@@ -50,7 +50,7 @@ const Footer = () => {
               <li>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-primary transition-colors"
+                  className="text-gray-400 hover:text-[#FFC72C] transition-colors"
                 >
                   About Us
                 </a>
@@ -58,7 +58,7 @@ const Footer = () => {
               <li>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-primary transition-colors"
+                  className="text-gray-400 hover:text-[#FFC72C] transition-colors"
                 >
                   Contact
                 </a>
@@ -86,11 +86,11 @@ const Footer = () => {
                   <FaPhone className="w-4 h-4 mr-2 flex-shrink-0" />
                   <a
                     href="tel:00447777279710"
-                    className="hover:text-red-400 transition"
-                  >
-                    00447777279710
-                  </a>
-                </div>
+                  className="hover:text-[#FFC72C] transition"
+                >
+                  00447777279710
+                </a>
+              </div>
               </div>
 
               {/* ✉️ Email */}
@@ -98,7 +98,7 @@ const Footer = () => {
                 <FaEnvelope className="w-4 h-4 mr-2 flex-shrink-0" />
                 <a
                   href="mailto:contact@riazbakers.co.uk"
-                  className="hover:text-red-400 transition"
+                  className="hover:text-[#FFC72C] transition"
                 >
                   contact@riazbakers.co.uk
                 </a>
@@ -113,19 +113,19 @@ const Footer = () => {
             <div className="flex space-x-4 mb-4 md:mb-0">
               <a
                 href="#"
-                className="bg-gray-800 hover:bg-primary p-3 rounded-full transition-colors"
+                className="bg-gray-800 hover:bg-[#FFC72C] p-3 rounded-full transition-colors"
               >
                 <FaFacebook className="w-5 h-5 text-white" />
               </a>
               <a
                 href="#"
-                className="bg-gray-800 hover:bg-primary p-3 rounded-full transition-colors"
+                className="bg-gray-800 hover:bg-[#FFC72C] p-3 rounded-full transition-colors"
               >
                 <FaInstagram className="w-5 h-5 text-white" />
               </a>
               <a
                 href="#"
-                className="bg-gray-800 hover:bg-primary p-3 rounded-full transition-colors"
+                className="bg-gray-800 hover:bg-[#FFC72C] p-3 rounded-full transition-colors"
               >
                 <FaPhone className="w-5 h-5 text-white" />
               </a>

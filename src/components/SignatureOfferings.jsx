@@ -8,11 +8,11 @@ const SignatureOfferings = () => {
           <h2 className="text-5xl font-extrabold mb-16">OUR SIGNATURE OFFERINGS</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-[80%] mx-auto">
-            <div className="bg-[#232323] rounded-2xl p-8 py-12 hover:border border-pink-600 flex flex-col items-center space-y-4">
-              <div className="border border-pink-600 rounded-full p-4">
+            <div className="bg-[#1E1E1E] rounded-2xl p-8 py-12 hover:border border-[#FFC72C] flex flex-col items-center space-y-4">
+              <div className="border border-[#FFC72C] rounded-full p-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 text-pink-500"
+                  className="h-10 w-10 text-[#FFC72C]"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -25,11 +25,11 @@ const SignatureOfferings = () => {
               </p>
             </div>
 
-            <div className="bg-[#232323] rounded-2xl p-8 hover:border border-red-600 py-12 flex flex-col items-center space-y-4">
-              <div className="border border-red-600 rounded-full p-4">
+            <div className="bg-[#1E1E1E] rounded-2xl p-8 hover:border border-[#FFC72C] py-12 flex flex-col items-center space-y-4">
+              <div className="border border-[#FFC72C] rounded-full p-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 text-red-500"
+                  className="h-10 w-10 text-[#FFC72C]"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -42,11 +42,11 @@ const SignatureOfferings = () => {
               </p>
             </div>
 
-            <div className="bg-[#232323] rounded-2xl p-8 py-12 hover:border border-yellow-600 flex flex-col items-center space-y-4">
-              <div className="border border-yellow-600 rounded-full p-4">
+            <div className="bg-[#1E1E1E] rounded-2xl p-8 py-12 hover:border border-[#FFC72C] flex flex-col items-center space-y-4">
+              <div className="border border-[#FFC72C] rounded-full p-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 text-yellow-500"
+                  className="h-10 w-10 text-[#FFC72C]"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >

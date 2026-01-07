@@ -1,10 +1,10 @@
 export const COLORS = {
-  primary: '#CF0A0A',
-  primaryDark: '#B50909',
-  darkBg: '#0F0F10',
-  darkSecondary: '#1E1E22',
+  primary: '#FFC72C',
+  primaryDark: '#FFC72C',
+  darkBg: '#000000',
+  darkSecondary: '#1E1E1E',
   white: '#FFFFFF',
-  gray: '#9CA3AF'
+  gray: '#F1F3F4'
 }
 
 export const BREAKPOINTS = {
@@ -83,3 +83,98 @@ export const BRANCHES = [
     address: "Working, UK"
   }
 ]
+
+export const CATALOG = [
+  {
+    id: 'cakes',
+    name: 'Cakes',
+    imageUrl: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800',
+    subcategories: [
+      {
+        id: 'birthday',
+        name: 'Birthday',
+        products: [
+          {
+            id: 'cake1',
+            name: 'Chocolate Fudge Cake',
+            description: 'Rich chocolate fudge layered cake',
+            productPic: 'https://images.unsplash.com/photo-1606313564200-c1b3570a0f1e?w=800',
+            inStock: true,
+            price_pk: 2500,
+            price_uk: 22,
+            colors: ['#6b4423', '#3d2b1f']
+          },
+          {
+            id: 'cake2',
+            name: 'Vanilla Cream Cake',
+            description: 'Classic vanilla sponge with cream',
+            productPic: 'https://images.unsplash.com/photo-1542826438-8c78b3f1e84a?w=800',
+            inStock: true,
+            price_pk: 2200,
+            price_uk: 18,
+            colors: ['#faf3e0', '#fff']
+          }
+        ]
+      },
+      {
+        id: 'wedding',
+        name: 'Wedding',
+        products: [
+          {
+            id: 'cake3',
+            name: 'Red Velvet',
+            description: 'Velvety red cake with cream cheese frosting',
+            productPic: 'https://images.unsplash.com/photo-1519999482648-25049ddd37b1?w=800',
+            inStock: false,
+            price_pk: 4500,
+            price_uk: 40,
+            colors: ['#9d2c3f', '#fff']
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'breads',
+    name: 'Breads',
+    imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800',
+    subcategories: [
+      {
+        id: 'artisan',
+        name: 'Artisan',
+        products: [
+          {
+            id: 'bread1',
+            name: 'Sourdough Loaf',
+            description: 'Crusty sourdough loaf',
+            productPic: 'https://images.unsplash.com/photo-1549931263-5a6b00bd8c87?w=800',
+            inStock: true,
+            price_pk: 450,
+            price_uk: 4,
+            colors: ['#c69c6d']
+          }
+        ]
+      }
+    ]
+  }
+]
+
+export function getCategories() {
+  return CATALOG.map(c => ({ id: c.id, name: c.name, imageUrl: c.imageUrl }))
+}
+
+export function getCategoryById(id) {
+  return CATALOG.find(c => c.id === id) || null
+}
+
+export function getSubcategories(categoryId) {
+  const cat = getCategoryById(categoryId)
+  return cat ? cat.subcategories.map(s => ({ id: s.id, name: s.name })) : []
+}
+
+export function getProducts(categoryId, subId) {
+  const cat = getCategoryById(categoryId)
+  if (!cat) return []
+  const sub = cat.subcategories.find(s => s.id === subId)
+  return sub ? sub.products : []
+}

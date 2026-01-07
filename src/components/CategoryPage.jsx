@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { getCategoryById, getSubcategories, getProducts } from "../utils/constants";
 import { FaArrowLeft, FaShoppingCart, FaCheck } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
 import { toast } from "react-toastify";
@@ -22,69 +21,23 @@ const CategoryPage = () => {
   const [selectedProduct, setSelectedProduct] = useState(null); // popup product
   const [selectedColor, setSelectedColor] = useState(null);
 
-  // fetch category data
   useEffect(() => {
-    const fetchCategory = async () => {
-      try {
-        const catRef = doc(db, "Web_Categories", categoryId);
-        const catSnap = await getDoc(catRef);
-        if (catSnap.exists()) {
-          setCategoryData(catSnap.data());
-        }
-      } catch (error) {
-        console.error("Error fetching category:", error);
-      }
-    };
-    fetchCategory();
+    const cat = getCategoryById(categoryId);
+    setCategoryData(cat ? { categoryName: cat.name, imageUrl: cat.imageUrl } : null);
   }, [categoryId]);
 
-  // fetch subcategories
   useEffect(() => {
-    const fetchSubCategories = async () => {
-      try {
-        const subColRef = collection(
-          db,
-          "Web_Categories",
-          categoryId,
-          "SubCategories"
-        );
-        const subSnap = await getDocs(subColRef);
-        const subs = subSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setSubcategories(subs);
-        if (subs.length > 0) {
-          setSelectedSub(subs[0].id);
-        }
-      } catch (error) {
-        console.error("Error fetching subcategories:", error);
-      }
-    };
-    fetchSubCategories();
+    const subs = getSubcategories(categoryId).map(s => ({ id: s.id, name: s.name }));
+    setSubcategories(subs);
+    if (subs.length > 0) {
+      setSelectedSub(subs[0].id);
+    }
   }, [categoryId]);
 
-  // fetch products of selected subcategory
   useEffect(() => {
-    const fetchProducts = async () => {
-      if (!selectedSub) return;
-      try {
-        const prodRef = collection(
-          db,
-          "Web_Categories",
-          categoryId,
-          "SubCategories",
-          selectedSub,
-          "Products"
-        );
-        const prodSnap = await getDocs(prodRef);
-        const prods = prodSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setProducts(prods);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    };
-    fetchProducts();
+    if (!selectedSub) return;
+    const prods = getProducts(categoryId, selectedSub);
+    setProducts(prods);
   }, [categoryId, selectedSub]);
 
   const isPakistan = location?.countryCode === "PK";
@@ -119,8 +72,8 @@ const CategoryPage = () => {
               key={sub.id}
               onClick={() => setSelectedSub(sub.id)}
               className={`px-4 py-2 rounded-full ${
-                selectedSub === sub.id ? "bg-red-600" : "bg-gray-800"
-              } text-white hover:bg-gray-700`}
+                selectedSub === sub.id ? "bg-[#FFC72C] text-black" : "bg-gray-800 text-white"
+              } hover:bg-gray-700`}
             >
               {sub.name || sub.id}
             </button>
@@ -150,7 +103,7 @@ const CategoryPage = () => {
                   {/* ✅ Stock badge */}
                   <span
                     className={`absolute top-2 right-2 px-3 py-1 text-xs font-bold rounded-full ${
-                      prod.inStock ? "bg-green-600" : "bg-red-600"
+                      prod.inStock ? "bg-green-600" : "bg-[#1E1E1E] text-gray-300 border border-gray-600"
                     }`}
                   >
                     {prod.inStock ? "In Stock" : "Out of Stock"}
@@ -185,8 +138,9 @@ const CategoryPage = () => {
                       ? "bg-gray-700 cursor-not-allowed"
                       : isInCart
                       ? "bg-green-600 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700"
+                      : "text-black"
                   }`}
+                  style={!prod.inStock || isInCart ? undefined : { backgroundColor: "#FFC72C" }}
                 >
                   {!prod.inStock ? (
                     "Out of Stock"
@@ -250,7 +204,7 @@ const CategoryPage = () => {
                       style={{ backgroundColor: color }}
                       className={`w-8 h-8 rounded-full border-2 ${
                         selectedColor === color
-                          ? "border-red-600 scale-110"
+                          ? "border-[#FFC72C] scale-110"
                           : "border-gray-400"
                       } transition-transform`}
                     />
@@ -290,11 +244,12 @@ const CategoryPage = () => {
                 setSelectedColor(null); // reset selection
               }}
               disabled={!selectedProduct.inStock}
-              className={`mt-4 w-full px-6 py-3 rounded-lg font-semibold text-white ${
+              className={`mt-4 w-full px-6 py-3 rounded-lg font-semibold ${
                 !selectedProduct.inStock
-                  ? "bg-gray-600 cursor-not-allowed"
-                  : "bg-red-600 hover:bg-red-700"
+                  ? "bg-gray-600 text-white cursor-not-allowed"
+                  : "text-black"
               }`}
+              style={!selectedProduct.inStock ? undefined : { backgroundColor: '#FFC72C' }}
             >
               {selectedProduct.inStock ? "Add to Cart" : "Out of Stock"}
             </button>

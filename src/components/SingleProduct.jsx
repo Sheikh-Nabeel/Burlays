@@ -3,10 +3,10 @@ import { FaArrowLeft, FaShoppingCart } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
 
 const COLORS = {
-  primary: "#CF0A0A",
-  darkBg: "#0F0F10",
+  primary: "#FFC72C",
+  darkBg: "#000000",
   white: "#FFFFFF",
-  gray: "#9CA3AF",
+  gray: "#F1F3F4",
 };
 
 const SingleProduct = ({ product, onBack }) => {
@@ -27,7 +27,7 @@ const SingleProduct = ({ product, onBack }) => {
       <div className="flex items-center justify-between mb-8">
         <button
           onClick={onBack}
-          className="flex items-center text-white hover:text-red-600 transition-colors"
+          className="flex items-center text-white hover:text-[#FFC72C] transition-colors"
         >
           <FaArrowLeft className="w-5 h-5 mr-2" />
           Back to s
@@ -54,8 +54,8 @@ const SingleProduct = ({ product, onBack }) => {
             key={category}
             onClick={() => setSelectedCategory(category)}
             className={`px-4 py-2 rounded-full ${
-              selectedCategory === category ? "bg-red-600" : "bg-gray-800"
-            } text-white hover:bg-gray-700`}
+              selectedCategory === category ? "bg-[#FFC72C] text-black" : "bg-gray-800 text-white"
+            } hover:bg-gray-700`}
           >
             {category}
           </button>
@@ -74,7 +74,8 @@ const SingleProduct = ({ product, onBack }) => {
       <div className="absolute bottom-4 right-4">
         <button
           onClick={() => addToCart(product)}
-          className="bg-red-600 text-white px-4 py-2 rounded-full flex items-center hover:bg-red-700"
+          className="text-black px-4 py-2 rounded-full flex items-center"
+          style={{ backgroundColor: "#FFC72C" }}
         >
           <FaShoppingCart className="w-5 h-5 mr-2" />
           Add to Cart

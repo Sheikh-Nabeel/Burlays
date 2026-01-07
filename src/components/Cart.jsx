@@ -1,10 +1,10 @@
 import React from "react";
 
 const COLORS = {
-  primary: "#CF0A0A",
-  darkBg: "#0F0F10",
+  primary: "#FFC72C",
+  darkBg: "#000000",
   white: "#FFFFFF",
-  gray: "#9CA3AF",
+  gray: "#F1F3F4",
 };
 
 const CartScreen = ({ onClose }) => {
@@ -45,7 +45,7 @@ const CartScreen = ({ onClose }) => {
             alt="Empty Cart"
             className="w-36 h-36 mb-4"
           />
-          <p className="text-red-500 text-lg font-medium">
+          <p className="text-[#FFC72C] text-lg font-medium">
             Your cart is empty!
           </p>
         </div>
@@ -58,7 +58,7 @@ const CartScreen = ({ onClose }) => {
           </div>
           <button
             className="px-6 py-2 rounded-full font-semibold"
-            style={{ backgroundColor: COLORS.primary, color: COLORS.white }}
+            style={{ backgroundColor: COLORS.primary, color: "#000000" }}
           >
             Proceed to Pay
           </button>

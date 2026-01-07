@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { getProducts } from "../utils/constants";
 import { FaArrowLeft, FaShoppingCart } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
 
@@ -13,28 +12,12 @@ const ProductsPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const productsRef = collection(
-          db,
-          "Web_Categories",
-          categoryId,
-          "SubCategories",
-          subCategoryId,
-          "Products"
-        );
-        const snapshot = await getDocs(productsRef);
-        setProducts(
-          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
-      } catch (err) {
-        console.error("Error fetching products:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
+    try {
+      const prods = getProducts(categoryId, subCategoryId);
+      setProducts(prods);
+    } finally {
+      setLoading(false);
+    }
   }, [categoryId, subCategoryId]);
 
   if (loading) return <p className="text-white">Loading...</p>;
@@ -43,7 +26,7 @@ const ProductsPage = () => {
     <div className="min-h-screen bg-black text-white p-6">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center mb-6 text-red-500 hover:underline"
+        className="flex items-center mb-6 text-[#FFC72C] hover:underline"
       >
         <FaArrowLeft className="mr-2" /> Back
       </button>
@@ -66,7 +49,8 @@ const ProductsPage = () => {
             </p>
             <button
               onClick={() => addToCart(prod)}
-              className="mt-3 bg-red-600 px-4 py-2 rounded-lg flex items-center hover:bg-red-700"
+              className="mt-3 px-4 py-2 rounded-lg flex items-center text-black"
+              style={{ backgroundColor: "#FFC72C" }}
             >
               <FaShoppingCart className="mr-2" /> Add to Cart
             </button>

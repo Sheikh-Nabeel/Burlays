@@ -7,12 +7,12 @@ import {
 } from "react-icons/fa";
 
 const COLORS = {
-  primary: "#CF0A0A",
-  primaryDark: "#B50909",
-  darkBg: "#0F0F10",
-  darkSecondary: "#1E1E22",
+  primary: "#FFC72C",
+  primaryDark: "#FFC72C",
+  darkBg: "#000000",
+  darkSecondary: "#1E1E1E",
   white: "#FFFFFF",
-  gray: "#9CA3AF",
+  gray: "#F1F3F4",
 };
 
 const BRANCHES = [
@@ -141,7 +141,7 @@ const StoreLocator = () => {
                       /\s/g,
                       ""
                     )}`}
-                    className="hover:text-red-400 transition"
+                  className="hover:text-[#FFC72C] transition"
                   >
                     {BRANCHES[selectedBranch].phone}
                   </a>
@@ -153,7 +153,7 @@ const StoreLocator = () => {
                     href={BRANCHES[selectedBranch].mapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-red-400 transition"
+                  className="hover:text-[#FFC72C] transition"
                   >
                     {BRANCHES[selectedBranch].address}
                   </a>
@@ -195,7 +195,7 @@ const StoreLocator = () => {
             </div>
 
             <div className="text-white text-center md:text-left space-y-6">
-              <p className="text-sm tracking-widest text-primary font-semibold uppercase">
+              <p className="text-sm tracking-widest font-semibold uppercase" style={{ color: '#FFC72C' }}>
                 Enhance your ordering experience
               </p>
               <h2 className="text-xl md:text-2xl font-bold leading-tight">
@@ -225,7 +225,7 @@ const StoreLocator = () => {
         {/* Brand Story Tab */}
         {activeTab === "brand" && (
           <div className="mt-10 space-y-10">
-            <h2 className="text-center text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-pink-500">
+            <h2 className="text-center text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#FFC72C] to-[#FFC72C]">
               OUR JOURNEY
             </h2>
 
@@ -241,7 +241,7 @@ const StoreLocator = () => {
 
               {/* Right Text */}
               <div className="lg:w-1/2 p-8 rounded-xl">
-                <h3 className="text-3xl font-bold mb-4 text-red-500">
+                <h3 className="text-3xl font-bold mb-4 text-[#FFC72C]">
                   Al Riaz Bakers
                 </h3>
                 <p className="text-gray-300 mb-6">
@@ -261,7 +261,7 @@ const StoreLocator = () => {
                   ].map((item, idx) => (
                     <div
                       key={idx}
-                      className="p-4 rounded-lg border border-red-500 bg-black/40 text-white shadow-md flex flex-col justify-center items-start"
+                      className="p-4 rounded-lg border border-[#FFC72C] bg-black/40 text-white shadow-md flex flex-col justify-center items-start"
                     >
                       <h4 className="font-semibold">{item.title}</h4>
                       <p className="text-sm text-gray-300">{item.subtitle}</p>
@@ -270,7 +270,7 @@ const StoreLocator = () => {
                 </div>
 
                 {/* Founder */}
-                <p className="mt-6 text-red-500 font-semibold italic">
+                <p className="mt-6 text-[#FFC72C] font-semibold italic">
                   Muhammad Riaz Ahmed, Founder & Master Baker
                 </p>
               </div>

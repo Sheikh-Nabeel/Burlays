@@ -11,9 +11,9 @@ const SplashScreen = () => {
           className="h-24 mx-auto mb-8"
         />
         <div className="flex justify-center space-x-2">
-          <div className="w-3 h-3 bg-primary rounded-full loading-pulse" style={{animationDelay: '0s'}}></div>
-          <div className="w-3 h-3 bg-primary rounded-full loading-pulse" style={{animationDelay: '0.2s'}}></div>
-          <div className="w-3 h-3 bg-primary rounded-full loading-pulse" style={{animationDelay: '0.4s'}}></div>
+          <div className="w-3 h-3 rounded-full loading-pulse" style={{backgroundColor: '#FFC72C', animationDelay: '0s'}}></div>
+          <div className="w-3 h-3 rounded-full loading-pulse" style={{backgroundColor: '#FFC72C', animationDelay: '0.2s'}}></div>
+          <div className="w-3 h-3 rounded-full loading-pulse" style={{backgroundColor: '#FFC72C', animationDelay: '0.4s'}}></div>
         </div>
       </div>
       <p className="text-sm text-gray-500">Designed & Developed by ALI AQDAS</p>

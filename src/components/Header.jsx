@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaShoppingCart, FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
 import { Link, useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { CATALOG } from "../utils/constants";
 
 const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   const { getTotalItems } = useCart();
@@ -26,37 +25,12 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  // Fetch categories + subcategories
   useEffect(() => {
-    const fetchCategories = async () => {
-      const categoriesCol = collection(db, "Web_Categories");
-      const categoriesSnapshot = await getDocs(categoriesCol);
-
-      const categoriesData = await Promise.all(
-        categoriesSnapshot.docs.map(async (catDoc) => {
-          const subCol = collection(
-            db,
-            `Web_Categories/${catDoc.id}/SubCategories`
-          );
-          const subSnap = await getDocs(subCol);
-
-          const subcategories = subSnap.docs.map((subDoc) => ({
-            id: subDoc.id,
-            ...subDoc.data(),
-          }));
-
-          return {
-            id: catDoc.id,
-            ...catDoc.data(),
-            subcategories,
-          };
-        })
-      );
-
-      setCategories(categoriesData);
-    };
-
-    fetchCategories();
+    setCategories(CATALOG.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      subcategories: cat.subcategories.map(sub => ({ id: sub.id, name: sub.name }))
+    })));
   }, []);
 
   return (
@@ -81,19 +55,19 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
           <div className="hidden md:flex items-center space-x-8">
             <button
               onClick={() => scrollToSection(homeRef)}
-              className="text-white hover:text-primary transition-colors font-medium"
+              className="text-white hover:text-[#FFC72C] transition-colors font-medium"
             >
               Home
             </button>
             <button
               onClick={() => scrollToSection(menuRef)}
-              className="text-white hover:text-primary transition-colors font-medium"
+              className="text-white hover:text-[#FFC72C] transition-colors font-medium"
             >
               Menu
             </button>
             <button
               onClick={() => scrollToSection(contactRef)}
-              className="text-white hover:text-primary transition-colors font-medium"
+              className="text-white hover:text-[#FFC72C] transition-colors font-medium"
             >
               Contact
             </button>
@@ -102,7 +76,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
             <Link to="/cart" className="relative p-2">
               <FaShoppingCart className="w-6 h-6 text-white" />
               {getTotalItems() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center" style={{ backgroundColor: '#FFC72C' }}>
                   {getTotalItems()}
                 </span>
               )}
@@ -114,7 +88,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
             <Link to="/cart" className="relative p-2">
               <FaShoppingCart className="w-6 h-6 text-white" />
               {getTotalItems() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center" style={{ backgroundColor: '#FFC72C' }}>
                   {getTotalItems()}
                 </span>
               )}
@@ -153,7 +127,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                   scrollToSection(homeRef);
                   setIsMenuOpen(false);
                 }}
-                className="text-white text-lg w-full text-left py-2 hover:text-primary"
+                className="text-white text-lg w-full text-left py-2 hover:text-[#FFC72C]"
               >
                 Home
               </button>
@@ -163,7 +137,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                   scrollToSection(menuRef);
                   setIsMenuOpen(false);
                 }}
-                className="text-white text-lg w-full text-left py-2 hover:text-primary"
+                className="text-white text-lg w-full text-left py-2 hover:text-[#FFC72C]"
               >
                 Menu
               </button>
@@ -173,7 +147,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                   scrollToSection(contactRef);
                   setIsMenuOpen(false);
                 }}
-                className="text-white text-lg w-full text-left py-2 hover:text-primary"
+                className="text-white text-lg w-full text-left py-2 hover:text-[#FFC72C]"
               >
                 Contact
               </button>
@@ -182,13 +156,12 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
               <div className="w-full">
                 <button
                   onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                  className="flex items-center justify-between w-full text-white text-lg py-2 hover:text-primary"
+                  className="flex items-center justify-between w-full text-white text-lg py-2 hover:text-[#FFC72C]"
                 >
                   <span>Categories</span>
                   <FaChevronDown
-                    className={`ml-2 transition-transform duration-300 ${
-                      isCategoriesOpen ? "rotate-180 text-primary" : ""
-                    }`}
+                    className={`ml-2 transition-transform duration-300 ${isCategoriesOpen ? "rotate-180" : ""}`}
+                    style={isCategoriesOpen ? { color: '#FFC72C' } : undefined}
                   />
                 </button>
 
@@ -203,15 +176,12 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                             onClick={() =>
                               setOpenCategory(openCategory === idx ? null : idx)
                             }
-                            className="flex justify-between items-center text-gray-300 text-left py-2 hover:text-primary"
+                            className="flex justify-between items-center text-gray-300 text-left py-2 hover:text-[#FFC72C]"
                           >
                             {cat.name || cat.id}
                             <FaChevronDown
-                              className={`ml-2 text-sm transition-transform ${
-                                openCategory === idx
-                                  ? "rotate-180 text-primary"
-                                  : ""
-                              }`}
+                              className={`ml-2 text-sm transition-transform ${openCategory === idx ? "rotate-180" : ""}`}
+                              style={openCategory === idx ? { color: '#FFC72C' } : undefined}
                             />
                           </button>
 
@@ -227,7 +197,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                                     );
                                     setIsMenuOpen(false);
                                   }}
-                                  className="text-gray-400 text-left py-1 hover:text-primary"
+                                  className="text-gray-400 text-left py-1 hover:text-[#FFC72C]"
                                 >
                                   {sub.name || sub.id}
                                 </button>

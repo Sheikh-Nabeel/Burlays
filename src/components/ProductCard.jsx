@@ -37,7 +37,7 @@ const ProductCard = ({ product, onAddToCart }) => {
         <div className={`absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-500`} />
         {/* Out of stock badge */}
         {!product.inStock && (
-          <div className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded">
+          <div className="absolute top-2 right-2 px-2 py-1 text-xs rounded border border-gray-600 bg-[#1E1E1E] text-gray-300">
             Out of Stock
           </div>
         )}
@@ -55,7 +55,7 @@ const ProductCard = ({ product, onAddToCart }) => {
         </div>
         
         <div className="mt-auto flex items-center justify-between">
-          <span className="text-xl font-bold text-primary">
+          <span className="text-xl font-bold text-[#FFC72C]">
             {currency}{price?.toFixed(2)}
           </span>
           <button
@@ -63,9 +63,10 @@ const ProductCard = ({ product, onAddToCart }) => {
             disabled={!product.inStock}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               product.inStock
-                ? 'bg-primary hover:bg-primary-dark text-white'
+                ? 'text-black'
                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
             }`}
+            style={product.inStock ? { backgroundColor: '#FFC72C' } : undefined}
           >
             {product.inStock ? 'Add to Cart' : 'Out of Stock'}
           </button>

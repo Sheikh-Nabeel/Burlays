@@ -57,7 +57,7 @@ const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
               <h2 className="text-2xl md:text-4xl lg:text-6xl font-bold mb-4">
                 {slide.title}
               </h2>
-              <p className="text-lg md:text-xl lg:text-2xl mb-6 text-primary">
+              <p className="text-lg md:text-xl lg:text-2xl mb-6 text-[#FFC72C]">
                 {slide.subtitle}
               </p>
               <p className="text-base md:text-lg mb-8 max-w-2xl mx-auto">
@@ -65,7 +65,8 @@ const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
               </p>
               <button
                 onClick={() => scrollToSection(menuRef)}
-                className="bg-primary bg-red-600 hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-semibold transition-colors"
+                className="text-black px-8 py-3 rounded-xl font-semibold transition-colors"
+                style={{ backgroundColor: '#FFC72C' }}
               >
                 Explore Menu
               </button>
@@ -79,9 +80,7 @@ const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
         {slides.map((_, index) => (
           <button
             key={index}
-            className={`w-3 h-3 rounded-full transition-colors ${
-              index === currentSlide ? "bg-primary" : "bg-white bg-opacity-50"
-            }`}
+            className={`w-3 h-3 rounded-full transition-colors ${index === currentSlide ? "bg-[#FFC72C]" : "bg-white bg-opacity-50"}`}
             onClick={() => setCurrentSlide(index)}
           />
         ))}
