@@ -1,0 +1,33 @@
+{
+  "provider": "google_pay",
+  "data": {
+    "environment": "PRODUCTION",
+    "apiVersion": 2,
+    "apiVersionMinor": 0,
+    "allowedPaymentMethods": [
+      {
+        "type": "CARD",
+        "tokenizationSpecification": {
+          "type": "PAYMENT_GATEWAY",
+          "parameters": {
+            "gateway": "stripe",
+            "stripe:version": "2020-08-27"
+          }
+        },
+        "parameters": {
+          "allowedCardNetworks": ["VISA", "MASTERCARD"],
+          "allowedAuthMethods": ["PAN_ONLY", "CRYPTOGRAM_3DS"],
+          "billingAddressRequired": true
+        }
+      }
+    ],
+    "merchantInfo": {
+      "merchantId": "BCR2DN7T6DD6D52A",
+      "merchantName": "Riaz Bakers"
+    },
+    "transactionInfo": {
+      "countryCode": "GB",
+      "currencyCode": "GBP"
+    }
+  }
+}
