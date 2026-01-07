@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import SplashScreen from "./SplashScreen";
-import Header from "./Header";
 import HeroCarousel from "./HeroCarousel";
 import CategoriesGrid from "./CategoriesGrid";
 import StoreLocator from "./StoreLocator";
@@ -35,13 +34,6 @@ function Home() {
 
   return (
     <div className="bg-black min-h-screen">
-      <Header
-        scrollToSection={scrollToSection}
-        homeRef={homeRef}
-        menuRef={menuRef}
-        contactRef={contactRef}
-      />
-
       <main>
         <section ref={homeRef}>
           <HeroCarousel

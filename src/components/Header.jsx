@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { FaShoppingCart, FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaShoppingCart, FaChevronDown, FaUser, FaPhone, FaUtensils, FaMapMarkerAlt } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import { CATALOG } from "../utils/constants";
+
+const MenuIcon = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    aria-hidden="true"
+  >
+    <rect x="3" y="5" width="18" height="2" rx="1" fill="#1E1E1E" />
+    <rect x="3" y="11" width="18" height="2" rx="1" fill="#1E1E1E" />
+    <rect x="3" y="17" width="18" height="2" rx="1" fill="#1E1E1E" />
+  </svg>
+);
 
 const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   const { getTotalItems } = useCart();
@@ -13,6 +28,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [openCategory, setOpenCategory] = useState(null); // ✅ fix
   const navigate = useNavigate();
+  const PANEL_WIDTH = 360;
 
   // Navbar hide/show on scroll
   useEffect(() => {
@@ -26,6 +42,10 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   }, [lastScrollY]);
 
   useEffect(() => {
+    document.body.style.overflow = isMenuOpen ? "hidden" : "";
+  }, [isMenuOpen]);
+
+  useEffect(() => {
     setCategories(CATALOG.map(cat => ({
       id: cat.id,
       name: cat.name,
@@ -34,190 +54,102 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   }, []);
 
   return (
-    <header
-      className={`sticky top-0 w-full z-50 bg-black transition-transform duration-300 ${
-        isVisible ? "translate-y-0" : "-translate-y-full"
-      }`}
-    >
-      <nav className="gradient-bg border-b border-gray-800 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/">
-            <img
-              src="/logo.png"
-              alt="Logo"
-              className="h-12 cursor-pointer"
-              onClick={() => scrollToSection(homeRef)}
-            />
-          </Link>
-
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-8">
+    <header className={`sticky top-0 w-full z-50 transition-transform duration-300 ${isVisible ? "translate-y-0" : "-translate-y-full"}`}>
+      <nav className="bg-white border-b shadow-sm" style={{ borderColor: '#F1F3F4' }}>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => scrollToSection(homeRef)}
-              className="text-white hover:text-[#FFC72C] transition-colors font-medium"
+              className="p-2 rounded-md"
+              onClick={() => setIsMenuOpen(true)}
+              style={{ color: '#1E1E1E' }}
             >
-              Home
+              <MenuIcon className="w-6 h-6" />
             </button>
-            <button
-              onClick={() => scrollToSection(menuRef)}
-              className="text-white hover:text-[#FFC72C] transition-colors font-medium"
-            >
-              Menu
-            </button>
-            <button
-              onClick={() => scrollToSection(contactRef)}
-              className="text-white hover:text-[#FFC72C] transition-colors font-medium"
-            >
-              Contact
-            </button>
-
-            {/* Cart */}
-            <Link to="/cart" className="relative p-2">
-              <FaShoppingCart className="w-6 h-6 text-white" />
-              {getTotalItems() > 0 && (
-                <span className="absolute -top-1 -right-1 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center" style={{ backgroundColor: '#FFC72C' }}>
-                  {getTotalItems()}
-                </span>
-              )}
+            <Link to="/" className="flex items-center gap-2">
+              <img src="/logo.png" alt="Logo" className="h-8" />
+              <span className="font-bold text-lg" style={{ color: '#1E1E1E' }}>Burlays</span>
             </Link>
           </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-4">
-            <Link to="/cart" className="relative p-2">
-              <FaShoppingCart className="w-6 h-6 text-white" />
-              {getTotalItems() > 0 && (
-                <span className="absolute -top-1 -right-1 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center" style={{ backgroundColor: '#FFC72C' }}>
-                  {getTotalItems()}
-                </span>
-              )}
+          <div className="flex items-center gap-3">
+            <Link to="/cart" className="relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold" style={{ backgroundColor: '#FFC72C', color: '#000000' }}>
+              <FaShoppingCart className="w-4 h-4" />
+              <span>CART</span>
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs" style={{ backgroundColor: '#000000', color: '#FFFFFF' }}>
+                {getTotalItems()}
+              </span>
             </Link>
             <button
-              className="text-white p-2"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+              onClick={() => setIsMenuOpen(true)}
+              style={{ backgroundColor: '#FFC72C', color: '#000000' }}
             >
-              {isMenuOpen ? (
-                <FaTimes className="w-6 h-6" />
-              ) : (
-                <FaBars className="w-6 h-6" />
-              )}
+              <FaUser className="w-4 h-4" />
+              <span>LOGIN</span>
             </button>
           </div>
         </div>
-
-        {/* Mobile Menu Popup */}
+      </nav>
+      <AnimatePresence>
         {isMenuOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col h-screen">
-            {/* Close button */}
-            <div className="flex justify-end p-4">
-              <button
-                className="text-white text-2xl"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <FaTimes />
-              </button>
-            </div>
-
-            {/* Menu Content */}
-            <div className="flex-1 flex flex-col items-start px-6 py-4 space-y-3 overflow-y-auto">
-              {/* Static Links */}
-              <button
-                onClick={() => {
-                  scrollToSection(homeRef);
-                  setIsMenuOpen(false);
-                }}
-                className="text-white text-lg w-full text-left py-2 hover:text-[#FFC72C]"
-              >
-                Home
-              </button>
-
-              <button
-                onClick={() => {
-                  scrollToSection(menuRef);
-                  setIsMenuOpen(false);
-                }}
-                className="text-white text-lg w-full text-left py-2 hover:text-[#FFC72C]"
-              >
-                Menu
-              </button>
-
-              <button
-                onClick={() => {
-                  scrollToSection(contactRef);
-                  setIsMenuOpen(false);
-                }}
-                className="text-white text-lg w-full text-left py-2 hover:text-[#FFC72C]"
-              >
-                Contact
-              </button>
-
-              {/* Categories Dropdown */}
-              <div className="w-full">
-                <button
-                  onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                  className="flex items-center justify-between w-full text-white text-lg py-2 hover:text-[#FFC72C]"
-                >
-                  <span>Categories</span>
-                  <FaChevronDown
-                    className={`ml-2 transition-transform duration-300 ${isCategoriesOpen ? "rotate-180" : ""}`}
-                    style={isCategoriesOpen ? { color: '#FFC72C' } : undefined}
-                  />
-                </button>
-
-                {/* Category + Subcategory rendering */}
-                {isCategoriesOpen && (
-                  <div className="ml-2 mt-2 flex flex-col space-y-2">
-                    {categories.length > 0 ? (
-                      categories.map((cat, idx) => (
-                        <div key={cat.id} className="flex flex-col">
-                          {/* Category */}
-                          <button
-                            onClick={() =>
-                              setOpenCategory(openCategory === idx ? null : idx)
-                            }
-                            className="flex justify-between items-center text-gray-300 text-left py-2 hover:text-[#FFC72C]"
-                          >
-                            {cat.name || cat.id}
-                            <FaChevronDown
-                              className={`ml-2 text-sm transition-transform ${openCategory === idx ? "rotate-180" : ""}`}
-                              style={openCategory === idx ? { color: '#FFC72C' } : undefined}
-                            />
-                          </button>
-
-                          {/* Subcategories */}
-                          {openCategory === idx && cat.subcategories && (
-                            <div className="ml-4 mt-1 flex flex-col space-y-1 border-l border-gray-700 pl-3">
-                              {cat.subcategories.map((sub) => (
-                                <button
-                                  key={sub.id}
-                                  onClick={() => {
-                                    navigate(
-                                      `/category/${cat.id}/sub/${sub.id}`
-                                    );
-                                    setIsMenuOpen(false);
-                                  }}
-                                  className="text-gray-400 text-left py-1 hover:text-[#FFC72C]"
-                                >
-                                  {sub.name || sub.id}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-400 text-sm px-3">
-                        Loading categories...
-                      </p>
-                    )}
+          <div className="fixed inset-0 z-50">
+            <motion.div
+              className="fixed inset-0 z-40 bg-black/50"
+              onClick={() => setIsMenuOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            <motion.aside
+              className="fixed left-0 top-0 z-50 h-full bg-white flex flex-col shadow-2xl border-r"
+              style={{ color: '#1E1E1E', width: PANEL_WIDTH }}
+              initial={{ x: -380 }}
+              animate={{ x: 0 }}
+              exit={{ x: -380 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#F1F3F4' }}>
+                <div className="flex items-center gap-2">
+                  <FaUser className="w-5 h-5" />
+                  <div>
+                    <div className="text-sm">Login to explore</div>
+                    <div className="text-xs font-semibold">World of flavors</div>
                   </div>
-                )}
+                </div>
+                <button className="px-3 py-1 rounded border text-xs" onClick={() => setIsMenuOpen(false)} style={{ borderColor: '#1E1E1E', color: '#1E1E1E' }}>
+                  LOGIN
+                </button>
               </div>
-            </div>
+              <div className="flex-1 px-4 py-4 space-y-4">
+                <button className="w-full flex items-center justify-between px-3 py-3 rounded" onClick={() => { navigate('/categories'); setIsMenuOpen(false); }}>
+                  <div className="flex items-center gap-3">
+                    <FaUtensils className="w-5 h-5" />
+                    <span>Explore Menu</span>
+                  </div>
+                  <FaChevronDown className="w-4 h-4 rotate-270" />
+                </button>
+                <button className="w-full flex items-center justify-between px-3 py-3 rounded" onClick={() => { navigate('/StoreLocator'); setIsMenuOpen(false); }}>
+                  <div className="flex items-center gap-3">
+                    <FaMapMarkerAlt className="w-5 h-5" />
+                    <span>Branch Locator</span>
+                  </div>
+                  <FaChevronDown className="w-4 h-4 rotate-270" />
+                </button>
+                <button className="w-full text-left px-3 py-3 rounded">Blog</button>
+                <button className="w-full text-left px-3 py-3 rounded">Privacy Policy</button>
+              </div>
+              <div className="mt-auto px-4 py-3 flex items-center justify-between" style={{ backgroundColor: '#FFC72C', color: '#000000' }}>
+                <div className="flex items-center gap-2 font-semibold">
+                  <FaPhone className="w-4 h-4" />
+                  <span>Hotline</span>
+                </div>
+                <button className="px-3 py-1 rounded text-sm font-semibold" style={{ backgroundColor: '#000000', color: '#FFFFFF' }} onClick={() => setIsMenuOpen(false)}>
+                  Close
+                </button>
+              </div>
+            </motion.aside>
           </div>
         )}
-      </nav>
+      </AnimatePresence>
     </header>
   );
 };

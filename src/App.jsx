@@ -9,11 +9,13 @@ import SingleProduct from "./components/SingleProduct"; // <-- new
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import PaymentScreen from "./components/PaymentScreen";
+import Header from "./components/Header";
 
 const App = () => {
   return (
     <div className="bg-black font-serif">
       <ToastContainer position="top-right" autoClose={2000} />
+      <Header />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/cart" element={<CartPage />} />
