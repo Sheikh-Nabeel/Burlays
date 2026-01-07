@@ -2,7 +2,7 @@ import React from 'react'
 
 const SplashScreen = () => {
   return (
-    <div className="min-h-screen bg-black flex flex-col justify-between items-center py-20">
+    <div className="min-h-screen bg-white text-darkSecondary flex flex-col justify-between items-center py-20">
       <div></div>
       <div className="text-center">
         <img 

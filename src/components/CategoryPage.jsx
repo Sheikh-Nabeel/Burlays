@@ -45,7 +45,7 @@ const CategoryPage = () => {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-black text-white p-">
+      <div className="min-h-screen bg-white text-darkSecondary p-">
         {/* Back Button */}
 
         {/* Banner */}
@@ -57,7 +57,7 @@ const CategoryPage = () => {
             alt={categoryData?.categoryName || categoryId}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black opacity-50"></div>
+          <div className="absolute inset-0 bg-black/40"></div>
           <div className="absolute inset-0 flex items-center justify-center">
             <h1 className="text-4xl font-bold capitalize">
               {categoryData?.categoryName || categoryId}
@@ -72,8 +72,8 @@ const CategoryPage = () => {
               key={sub.id}
               onClick={() => setSelectedSub(sub.id)}
               className={`px-4 py-2 rounded-full ${
-                selectedSub === sub.id ? "bg-[#FFC72C] text-black" : "bg-gray-800 text-white"
-              } hover:bg-gray-700`}
+                selectedSub === sub.id ? "bg-primary text-dark" : "bg-grayLight text-darkSecondary"
+              }`}
             >
               {sub.name || sub.id}
             </button>
@@ -91,7 +91,7 @@ const CategoryPage = () => {
               <div
                 key={prod.id}
                 onClick={() => setSelectedProduct(prod)} // open popup
-                className="bg-gray-900 rounded-lg flex flex-col cursor-pointer hover:scale-105 transition-transform"
+                className="bg-white border border-grayLight rounded-lg flex flex-col cursor-pointer hover:shadow-md transition-transform"
               >
                 <div className="relative">
                   <img
@@ -103,7 +103,7 @@ const CategoryPage = () => {
                   {/* ✅ Stock badge */}
                   <span
                     className={`absolute top-2 right-2 px-3 py-1 text-xs font-bold rounded-full ${
-                      prod.inStock ? "bg-green-600" : "bg-[#1E1E1E] text-gray-300 border border-gray-600"
+                      prod.inStock ? "bg-green-600 text-white" : "bg-grayLight text-darkSecondary border border-gray-300"
                     }`}
                   >
                     {prod.inStock ? "In Stock" : "Out of Stock"}
@@ -111,12 +111,12 @@ const CategoryPage = () => {
                 </div>
 
                 <h3 className="text-lg px-2 font-semibold">{prod.name}</h3>
-                <p className="text-gray-400 px-2 text-sm mb-2">
+                <p className="text-gray-500 px-2 text-sm mb-2">
                   {prod.description || "No description"}
                 </p>
 
                 <div className="flex gap-3 px-2 items-center mb-3">
-                  <p className="text-white font-bold">
+                  <p className="font-bold">
                     {currency} {price}
                   </p>
                   <p className="text-sm text-gray-500">
@@ -135,12 +135,11 @@ const CategoryPage = () => {
                   disabled={!prod.inStock}
                   className={`mt-auto px-4 py-2 rounded-xl flex items-center justify-center ${
                     !prod.inStock
-                      ? "bg-gray-700 cursor-not-allowed"
+                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
                       : isInCart
-                      ? "bg-green-600 cursor-not-allowed"
-                      : "text-black"
+                      ? "bg-green-600 text-white cursor-not-allowed"
+                      : "bg-primary text-dark"
                   }`}
-                  style={!prod.inStock || isInCart ? undefined : { backgroundColor: "#FFC72C" }}
                 >
                   {!prod.inStock ? (
                     "Out of Stock"
@@ -163,8 +162,8 @@ const CategoryPage = () => {
       {/* Product Popup */}
       {/* Product Popup */}
       {selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-xl p-6 w-full max-w-lg relative">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white text-darkSecondary rounded-xl p-6 w-full max-w-lg relative border border-grayLight">
             {/* Close button */}
             <button
               onClick={() => setSelectedProduct(null)}
@@ -184,17 +183,17 @@ const CategoryPage = () => {
             />
 
             {/* Product Info */}
-            <h2 className="text-2xl text-white font-bold mb-2">
+            <h2 className="text-2xl font-bold mb-2">
               {selectedProduct.name}
             </h2>
-            <p className="text-gray-400 mb-3">
+            <p className="text-gray-600 mb-3">
               {selectedProduct.description || "No description"}
             </p>
 
             {/* Colors */}
             {selectedProduct.colors && selectedProduct.colors.length > 0 && (
               <div className="mb-4">
-                <p className="font-semibold text-white mb-2">Select Color:</p>
+                <p className="font-semibold mb-2">Select Color:</p>
                 <div className="flex gap-2">
                   {selectedProduct.colors.map((color) => (
                     <button
@@ -213,9 +212,9 @@ const CategoryPage = () => {
 
                 {/* Show which color is selected */}
                 {selectedColor && (
-                  <p className="mt-2 text-sm text-gray-300">
+                  <p className="mt-2 text-sm text-gray-600">
                     Selected:{" "}
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold">
                       {selectedColor}
                     </span>
                   </p>
@@ -246,10 +245,9 @@ const CategoryPage = () => {
               disabled={!selectedProduct.inStock}
               className={`mt-4 w-full px-6 py-3 rounded-lg font-semibold ${
                 !selectedProduct.inStock
-                  ? "bg-gray-600 text-white cursor-not-allowed"
-                  : "text-black"
+                  ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                  : "bg-primary text-dark"
               }`}
-              style={!selectedProduct.inStock ? undefined : { backgroundColor: '#FFC72C' }}
             >
               {selectedProduct.inStock ? "Add to Cart" : "Out of Stock"}
             </button>

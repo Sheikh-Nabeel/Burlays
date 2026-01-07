@@ -13,7 +13,7 @@ import Header from "./components/Header";
 
 const App = () => {
   return (
-    <div className="bg-black font-serif">
+    <div className="bg-white text-darkSecondary font-serif">
       <ToastContainer position="top-right" autoClose={2000} />
       <Header />
       <Routes>

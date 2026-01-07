@@ -9,16 +9,16 @@ import {
 
 const Footer = () => {
   return (
-    <footer className="gradient-bg py-12">
+    <footer className="bg-white border-t border-grayLight py-12">
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo & Tagline */}
           <div className="col-span-1 lg:col-span-2">
             <img src="/logo.png" alt="CodesSpark" className="h-16 mb-4" />
-            <p className="text-gray-300 text-lg italic mb-4">
+            <p className="text-darkSecondary text-lg italic mb-4">
               Igniting Innovation with Code
             </p>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-600 text-sm">
               CodesSpark is a creative software agency specializing in modern
               web and app development. We blend innovation, technology, and
               design to craft solutions that empower businesses worldwide.
@@ -27,14 +27,14 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-white font-semibold text-lg mb-4">
+            <h3 className="text-darkSecondary font-semibold text-lg mb-4">
               Quick Links
             </h3>
             <ul className="space-y-2">
               <li>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-[#FFC72C] transition-colors"
+                  className="text-gray-600 hover:text-primary transition-colors"
                 >
                   Home
                 </a>
@@ -42,7 +42,7 @@ const Footer = () => {
               <li>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-[#FFC72C] transition-colors"
+                  className="text-gray-600 hover:text-primary transition-colors"
                 >
                   Products
                 </a>
@@ -50,7 +50,7 @@ const Footer = () => {
               <li>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-[#FFC72C] transition-colors"
+                  className="text-gray-600 hover:text-primary transition-colors"
                 >
                   About Us
                 </a>
@@ -58,7 +58,7 @@ const Footer = () => {
               <li>
                 <a
                   href="#"
-                  className="text-gray-400 hover:text-[#FFC72C] transition-colors"
+                  className="text-gray-600 hover:text-primary transition-colors"
                 >
                   Contact
                 </a>
@@ -68,10 +68,10 @@ const Footer = () => {
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-white font-semibold text-lg mb-4">
+            <h3 className="text-darkSecondary font-semibold text-lg mb-4">
               Contact Us
             </h3>
-            <div className="space-y-4 text-gray-400 text-sm">
+            <div className="space-y-4 text-gray-600 text-sm">
               {/* 🇵🇰 Pakistan Branch */}
               <div>
                 <div className="flex items-start">
@@ -86,7 +86,7 @@ const Footer = () => {
                   <FaPhone className="w-4 h-4 mr-2 flex-shrink-0" />
                   <a
                     href="tel:00447777279710"
-                  className="hover:text-[#FFC72C] transition"
+                  className="hover:text-primary transition"
                 >
                   00447777279710
                 </a>
@@ -98,7 +98,7 @@ const Footer = () => {
                 <FaEnvelope className="w-4 h-4 mr-2 flex-shrink-0" />
                 <a
                   href="mailto:contact@riazbakers.co.uk"
-                  className="hover:text-[#FFC72C] transition"
+                  className="hover:text-primary transition"
                 >
                   contact@riazbakers.co.uk
                 </a>
@@ -108,31 +108,31 @@ const Footer = () => {
         </div>
 
         {/* Social Icons & Copyright */}
-        <div className="border-t border-gray-800 mt-8 pt-8">
+        <div className="border-t border-grayLight mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex space-x-4 mb-4 md:mb-0">
               <a
                 href="#"
-                className="bg-gray-800 hover:bg-[#FFC72C] p-3 rounded-full transition-colors"
+                className="bg-grayLight hover:bg-primary p-3 rounded-full transition-colors"
               >
-                <FaFacebook className="w-5 h-5 text-white" />
+                <FaFacebook className="w-5 h-5 text-darkSecondary" />
               </a>
               <a
                 href="#"
-                className="bg-gray-800 hover:bg-[#FFC72C] p-3 rounded-full transition-colors"
+                className="bg-grayLight hover:bg-primary p-3 rounded-full transition-colors"
               >
-                <FaInstagram className="w-5 h-5 text-white" />
+                <FaInstagram className="w-5 h-5 text-darkSecondary" />
               </a>
               <a
                 href="#"
-                className="bg-gray-800 hover:bg-[#FFC72C] p-3 rounded-full transition-colors"
+                className="bg-grayLight hover:bg-primary p-3 rounded-full transition-colors"
               >
-                <FaPhone className="w-5 h-5 text-white" />
+                <FaPhone className="w-5 h-5 text-darkSecondary" />
               </a>
             </div>
-            <div className="text-gray-400 text-sm text-center md:text-right">
+            <div className="text-gray-600 text-sm text-center md:text-right">
               <p>© {new Date().getFullYear()}{" "}
-                <span className="text-white font-semibold">Albasti</span>. All
+                <span className="text-darkSecondary font-semibold">Albasti</span>. All
                 rights reserved.
               </p>
               <p>Powered by Albasti</p>

@@ -13,9 +13,9 @@ const CategoriesGrid = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black pb-20 ">
+    <div className="min-h-screen bg-white pb-20 ">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-4xl font-semiboldbold text-white my-8 text-center font-serif">
+        <h2 className="text-4xl font-semiboldbold text-darkSecondary my-8 text-center font-serif">
           Our Categories
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">

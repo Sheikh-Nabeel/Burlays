@@ -20,10 +20,10 @@ const ProductsPage = () => {
     }
   }, [categoryId, subCategoryId]);
 
-  if (loading) return <p className="text-white">Loading...</p>;
+  if (loading) return <p className="text-darkSecondary">Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-white text-darkSecondary p-6">
       <button
         onClick={() => navigate(-1)}
         className="flex items-center mb-6 text-[#FFC72C] hover:underline"
@@ -37,7 +37,7 @@ const ProductsPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {products.map((prod) => (
-          <div key={prod.id} className="bg-gray-900 p-4 rounded-lg">
+          <div key={prod.id} className="bg-white p-4 rounded-lg border border-grayLight">
             <img
               src={prod.productPic || "https://via.placeholder.com/200"}
               alt={prod.name}

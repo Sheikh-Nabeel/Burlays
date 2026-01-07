@@ -33,7 +33,7 @@ function Home() {
   }
 
   return (
-    <div className="bg-black min-h-screen">
+    <div className="bg-white min-h-screen text-darkSecondary">
       <main>
         <section ref={homeRef}>
           <HeroCarousel

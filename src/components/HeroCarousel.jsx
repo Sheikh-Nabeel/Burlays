@@ -51,9 +51,9 @@ const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
             alt={slide.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+          <div className="absolute inset-0 bg-black/40"></div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white max-w-4xl px-4">
+            <div className="text-center text-pureWhite max-w-4xl px-4">
               <h2 className="text-2xl md:text-4xl lg:text-6xl font-bold mb-4">
                 {slide.title}
               </h2>
