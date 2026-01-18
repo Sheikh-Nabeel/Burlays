@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaShoppingCart, FaUser, FaPhone, FaMapMarkerAlt, FaTh } from "react-icons/fa";
+import { FaShoppingCart, FaUser, FaPhone, FaMapMarkerAlt, FaTh, FaSearch, FaMapPin } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import { CATALOG } from "../utils/constants";
@@ -50,9 +50,29 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
             </button>
             <Link to="/" className="flex items-center gap-2">
               <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
-              <span className="font-extrabold text-2xl tracking-tight" style={{ color: '#1E1E1E' }}>Burlays</span>
+              <span className="font-extrabold text-2xl tracking-tight hidden md:block" style={{ color: '#1E1E1E' }}>Burlays</span>
             </Link>
           </div>
+
+          <div className="hidden md:flex flex-1 mx-8 max-w-2xl gap-4">
+             <div className="flex-1 relative">
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Find in burlays" 
+                  className="w-full bg-gray-50 border-none rounded-md py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-[#FFC72C]"
+                />
+             </div>
+             <div className="flex-1 relative">
+                <FaMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Enter the Delivery Address" 
+                  className="w-full bg-gray-50 border-none rounded-md py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-[#FFC72C]"
+                />
+             </div>
+          </div>
+
           <div className="flex items-center gap-3">
             <Link to="/cart" className="relative flex items-center gap-2 px-5 py-2.5 rounded-md font-bold text-sm shadow-sm transition-transform active:scale-95" style={{ backgroundColor: '#FFC72C', color: '#000000' }}>
               <FaShoppingCart className="w-4 h-4" />

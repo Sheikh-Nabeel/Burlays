@@ -17,40 +17,40 @@ export const BREAKPOINTS = {
 
 export const MOCK_CATEGORIES = [
   { 
-    id: '1', 
-    name: 'Cakes', 
-    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400',
-    description: 'Delicious cakes for every occasion'
+    id: 'malai-tikka', 
+    name: 'Malai Tikka', 
+    image: 'https://cheezious.com/wp-content/uploads/2021/01/Malai-Tikka-Pizza.jpg',
+    description: 'Creamy and savory delight'
   },
   { 
-    id: '2', 
-    name: 'Breads', 
-    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400',
-    description: 'Fresh baked breads daily'
+    id: 'thin-crust', 
+    name: 'Thin Crust Pizza', 
+    image: 'https://cheezious.com/wp-content/uploads/2021/01/Chicken-Fajita-Pizza.jpg',
+    description: 'Crispy and delicious'
   },
   { 
-    id: '3', 
-    name: 'Pastries', 
-    image: 'https://images.unsplash.com/photo-1555507036-ab794f575995?w=400',
-    description: 'Flaky and buttery pastries'
+    id: 'starters', 
+    name: 'Starters', 
+    image: 'https://cheezious.com/wp-content/uploads/2021/01/Flaming-Wings.jpg',
+    description: 'Perfect way to start'
   },
   { 
-    id: '4', 
-    name: 'Cookies', 
-    image: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400',
-    description: 'Crispy and soft cookies'
+    id: 'somewhat-local', 
+    name: 'Somewhat Local', 
+    image: 'https://cheezious.com/wp-content/uploads/2021/01/Chicken-Tikka-Pizza.jpg',
+    description: 'Local flavors you love'
   },
   { 
-    id: '5', 
-    name: 'Pizza', 
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400',
-    description: 'Wood-fired gourmet pizzas'
+    id: 'cheezy-treats', 
+    name: 'Cheezy Treats', 
+    image: 'https://cheezious.com/wp-content/uploads/2021/01/Cheezy-Sticks.jpg',
+    description: 'For the cheese lovers'
   },
   { 
-    id: '6', 
-    name: 'Fast Food', 
-    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400',
-    description: 'Quick and tasty meals'
+    id: 'sandwiches', 
+    name: 'Sandwiches', 
+    image: 'https://cheezious.com/wp-content/uploads/2021/01/Club-Sandwich.jpg',
+    description: 'Fresh and filling'
   }
 ]
 
@@ -86,81 +86,121 @@ export const BRANCHES = [
 
 export const CATALOG = [
   {
-    id: 'cakes',
-    name: 'Cakes',
-    imageUrl: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800',
-    subcategories: [
+    id: 'malai-tikka',
+    name: 'Malai Tikka',
+    products: [
       {
-        id: 'birthday',
-        name: 'Birthday',
-        products: [
-          {
-            id: 'cake1',
-            name: 'Chocolate Fudge Cake',
-            description: 'Rich chocolate fudge layered cake',
-            productPic: 'https://images.unsplash.com/photo-1606313564200-c1b3570a0f1e?w=800',
-            inStock: true,
-            price_pk: 2500,
-            price_uk: 22,
-            colors: ['#6b4423', '#3d2b1f']
-          },
-          {
-            id: 'cake2',
-            name: 'Vanilla Cream Cake',
-            description: 'Classic vanilla sponge with cream',
-            productPic: 'https://images.unsplash.com/photo-1542826438-8c78b3f1e84a?w=800',
-            inStock: true,
-            price_pk: 2200,
-            price_uk: 18,
-            colors: ['#faf3e0', '#fff']
-          }
-        ]
+        id: 'mt-1',
+        name: 'Malai Tikka',
+        description: 'A Flavorful Pizza Loaded With Fresh BBQ Malai Tikka Chunks And Topped With A Swirl Of Creamy Sauce.',
+        productPic: 'https://cheezious.com/wp-content/uploads/2021/01/Malai-Tikka-Pizza.jpg',
+        price_pk: 1600,
+        price_uk: 15
       },
       {
-        id: 'wedding',
-        name: 'Wedding',
-        products: [
-          {
-            id: 'cake3',
-            name: 'Red Velvet',
-            description: 'Velvety red cake with cream cheese frosting',
-            productPic: 'https://images.unsplash.com/photo-1519999482648-25049ddd37b1?w=800',
-            inStock: false,
-            price_pk: 4500,
-            price_uk: 40,
-            colors: ['#9d2c3f', '#fff']
-          }
-        ]
+        id: 'mt-2',
+        name: 'Special Malai Tikka',
+        description: 'Extra cheese and double meat topping.',
+        productPic: 'https://cheezious.com/wp-content/uploads/2021/01/Malai-Tikka-Pizza.jpg',
+        price_pk: 1800,
+        price_uk: 17
       }
     ]
   },
   {
-    id: 'breads',
-    name: 'Breads',
-    imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800',
-    subcategories: [
+    id: 'thin-crust',
+    name: 'Thin Crust Pizza',
+    products: [
       {
-        id: 'artisan',
-        name: 'Artisan',
-        products: [
-          {
-            id: 'bread1',
-            name: 'Sourdough Loaf',
-            description: 'Crusty sourdough loaf',
-            productPic: 'https://images.unsplash.com/photo-1549931263-5a6b00bd8c87?w=800',
-            inStock: true,
-            price_pk: 450,
-            price_uk: 4,
-            colors: ['#c69c6d']
-          }
-        ]
+        id: 'tc-1',
+        name: 'Chicken Fajita',
+        description: 'Classic fajita with onions and capsicum.',
+        productPic: 'https://cheezious.com/wp-content/uploads/2021/01/Chicken-Fajita-Pizza.jpg',
+        price_pk: 1400,
+        price_uk: 12
+      },
+      {
+        id: 'tc-2',
+        name: 'Pepperoni',
+        description: 'Loaded with pepperoni slices.',
+        productPic: 'https://cheezious.com/wp-content/uploads/2021/01/Chicken-Fajita-Pizza.jpg',
+        price_pk: 1500,
+        price_uk: 13
+      }
+    ]
+  },
+  {
+    id: 'starters',
+    name: 'Starters',
+    products: [
+      {
+        id: 'st-1',
+        name: 'Flaming Wings',
+        description: 'Spicy wings with dip.',
+        productPic: 'https://cheezious.com/wp-content/uploads/2021/01/Flaming-Wings.jpg',
+        price_pk: 600,
+        price_uk: 5
+      },
+      {
+        id: 'st-2',
+        name: 'Garlic Bread',
+        description: 'Buttery garlic bread sticks.',
+        productPic: 'https://cheezious.com/wp-content/uploads/2021/01/Cheezy-Sticks.jpg',
+        price_pk: 400,
+        price_uk: 3
+      }
+    ]
+  },
+  {
+    id: 'somewhat-local',
+    name: 'Somewhat Local',
+    products: [
+      {
+        id: 'sl-1',
+        name: 'Chicken Tikka',
+        description: 'Traditional tikka flavor.',
+        productPic: 'https://cheezious.com/wp-content/uploads/2021/01/Chicken-Tikka-Pizza.jpg',
+        price_pk: 1550,
+        price_uk: 14
+      }
+    ]
+  },
+  {
+    id: 'cheezy-treats',
+    name: 'Cheezy Treats',
+    products: [
+      {
+        id: 'ct-1',
+        name: 'Cheezy Sticks',
+        description: 'Mozzarella filled sticks.',
+        productPic: 'https://cheezious.com/wp-content/uploads/2021/01/Cheezy-Sticks.jpg',
+        price_pk: 800,
+        price_uk: 7
+      }
+    ]
+  },
+  {
+    id: 'sandwiches',
+    name: 'Sandwiches',
+    products: [
+      {
+        id: 'sd-1',
+        name: 'Club Sandwich',
+        description: 'Triple layered sandwich with fries.',
+        productPic: 'https://cheezious.com/wp-content/uploads/2021/01/Club-Sandwich.jpg',
+        price_pk: 900,
+        price_uk: 8
       }
     ]
   }
 ]
 
 export function getCategories() {
-  return CATALOG.map(c => ({ id: c.id, name: c.name, imageUrl: c.imageUrl }))
+  return MOCK_CATEGORIES.map(c => ({ id: c.id, name: c.name, imageUrl: c.image }))
+}
+
+export function getAllProducts() {
+  return CATALOG;
 }
 
 export function getCategoryById(id) {
@@ -168,13 +208,11 @@ export function getCategoryById(id) {
 }
 
 export function getSubcategories(categoryId) {
-  const cat = getCategoryById(categoryId)
-  return cat ? cat.subcategories.map(s => ({ id: s.id, name: s.name })) : []
+  // Return empty array as we moved to flat structure
+  return []; 
 }
 
-export function getProducts(categoryId, subId) {
-  const cat = getCategoryById(categoryId)
-  if (!cat) return []
-  const sub = cat.subcategories.find(s => s.id === subId)
-  return sub ? sub.products : []
+export function getProducts(categoryId) {
+  const cat = getCategoryById(categoryId);
+  return cat ? cat.products : [];
 }

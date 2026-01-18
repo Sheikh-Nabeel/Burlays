@@ -4,8 +4,9 @@ import Home from "./components/Home";
 import CartPage from "./components/CartPage";
 import CategoriesGrid from "./components/CategoriesGrid";
 import CategoryPage from "./components/CategoryPage";
-import ProductsPage from "./components/ProductsPage"; // <-- new
-import SingleProduct from "./components/SingleProduct"; // <-- new
+import MenuPage from "./components/MenuPage"; // Import the new MenuPage
+import ProductsPage from "./components/ProductsPage";
+import SingleProduct from "./components/SingleProduct";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import PaymentScreen from "./components/PaymentScreen";
@@ -20,6 +21,9 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/SingleProduct" element={<SingleProduct />} />
+
+        {/* Menu Page - New Route */}
+        <Route path="/menu" element={<MenuPage />} />
 
         {/* Categories */}
         <Route path="/categories" element={<CategoriesGrid />} />

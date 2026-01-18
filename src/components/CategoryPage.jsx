@@ -44,7 +44,6 @@ const CategoryPage = () => {
 
   return (
     <>
-      <Header />
       <div className="min-h-screen bg-white text-darkSecondary p-">
         {/* Back Button */}
 
