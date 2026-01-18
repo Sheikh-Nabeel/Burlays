@@ -51,27 +51,6 @@ const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
             alt={slide.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/40"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-pureWhite max-w-4xl px-4">
-              <h2 className="text-2xl md:text-4xl lg:text-6xl font-bold mb-4">
-                {slide.title}
-              </h2>
-              <p className="text-lg md:text-xl lg:text-2xl mb-6 text-[#FFC72C]">
-                {slide.subtitle}
-              </p>
-              <p className="text-base md:text-lg mb-8 max-w-2xl mx-auto">
-                {slide.description}
-              </p>
-              <button
-                onClick={() => scrollToSection(menuRef)}
-                className="text-black px-8 py-3 rounded-xl font-semibold transition-colors"
-                style={{ backgroundColor: '#FFC72C' }}
-              >
-                Explore Menu
-              </button>
-            </div>
-          </div>
         </div>
       ))}
 
