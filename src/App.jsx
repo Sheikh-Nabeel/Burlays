@@ -13,6 +13,8 @@ import PaymentScreen from "./components/PaymentScreen";
 import Header from "./components/Header";
 import { Link } from "react-router-dom";
 
+import BlogDetail from "./components/BlogDetail";
+
 const App = () => {
   return (
     <div className="bg-white text-darkSecondary font-serif relative">
@@ -25,6 +27,9 @@ const App = () => {
 
         {/* Menu Page - New Route */}
         <Route path="/menu" element={<MenuPage />} />
+
+        {/* Blog Detail */}
+        <Route path="/blog/:blogId" element={<BlogDetail />} />
 
         {/* Categories */}
         <Route path="/categories" element={<CategoriesGrid />} />
