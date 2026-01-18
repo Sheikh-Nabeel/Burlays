@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import SplashScreen from "./SplashScreen";
 import HeroCarousel from "./HeroCarousel";
 import CategoriesGrid from "./CategoriesGrid";
-import StoreLocator from "./StoreLocator";
+import BrandHighlights from "./BrandHighlights";
+import DownloadApp from "./DownloadApp";
+import BlogSection from "./BlogSection";
+import BranchesSection from "./BranchesSection";
 import Footer from "./Footer";
 import SignatureOfferings from "./SignatureOfferings";
 
@@ -48,13 +51,18 @@ function Home() {
           <CategoriesGrid />
         </section>
 
-        {/* <section>
-          <SignatureOfferings />
-        </section> */}
-
-        <section ref={contactRef}>
-          <StoreLocator />
+        <section>
+          <BrandHighlights />
         </section>
+
+        <section>
+          <DownloadApp />
+        </section>
+
+        <section>
+          <BlogSection />
+        </section>
+ 
       </main>
 
       <Footer />

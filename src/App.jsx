@@ -11,10 +11,11 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import PaymentScreen from "./components/PaymentScreen";
 import Header from "./components/Header";
+import { Link } from "react-router-dom";
 
 const App = () => {
   return (
-    <div className="bg-white text-darkSecondary font-serif">
+    <div className="bg-white text-darkSecondary font-serif relative">
       <ToastContainer position="top-right" autoClose={2000} />
       <Header />
       <Routes>
@@ -37,6 +38,14 @@ const App = () => {
         <Route path="/PaymentScreen" element={<PaymentScreen />} />
         
       </Routes>
+
+      {/* Floating Order Now Button */}
+      <Link 
+        to="/menu" 
+        className="fixed bottom-6 right-6 z-50 bg-[#E25C1D] text-white font-bold px-5 py-2 rounded-full shadow-lg hover:bg-[#c94e16] transition-all hover:scale-105 flex items-center gap-2 text-sm"
+      >
+        <span>ORDER NOW</span>
+      </Link>
     </div>
   );
 };

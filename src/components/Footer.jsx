@@ -1,144 +1,78 @@
 import React from "react";
-import {
-  FaMapMarkerAlt,
-  FaPhone,
-  FaEnvelope,
-  FaFacebook,
-  FaInstagram,
-} from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="bg-white border-t border-grayLight py-12">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Logo & Tagline */}
-          <div className="col-span-1 lg:col-span-2">
-            <img src="/logo.png" alt="CodesSpark" className="h-16 mb-4" />
-            <p className="text-darkSecondary text-lg italic mb-4">
-              Igniting Innovation with Code
-            </p>
-            <p className="text-gray-600 text-sm">
-              CodesSpark is a creative software agency specializing in modern
-              web and app development. We blend innovation, technology, and
-              design to craft solutions that empower businesses worldwide.
-            </p>
+    <footer className="w-full bg-white pt-10">
+      {/* Newsletter Section */}
+      <div className="max-w-7xl mx-auto px-4 mb-20 relative">
+        <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col md:flex-row items-center justify-between">
+          
+          {/* Wave Background Decoration - Top Right */}
+          <div className="absolute top-0 right-0 w-[60%] h-full bg-[#FFC72C] z-0" 
+               style={{ 
+                 clipPath: "ellipse(80% 100% at 80% 0%)",
+                 opacity: 0.9 
+               }}>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="text-darkSecondary font-semibold text-lg mb-4">
-              Quick Links
-            </h3>
-            <ul className="space-y-2">
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-primary transition-colors"
-                >
-                  Home
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-primary transition-colors"
-                >
-                  Products
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-primary transition-colors"
-                >
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-primary transition-colors"
-                >
-                  Contact
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <h3 className="text-darkSecondary font-semibold text-lg mb-4">
-              Contact Us
-            </h3>
-            <div className="space-y-4 text-gray-600 text-sm">
-              {/* 🇵🇰 Pakistan Branch */}
-              <div>
-                <div className="flex items-start">
-                  <FaMapMarkerAlt className="w-4 h-4 mr-2 mt-1 flex-shrink-0" />
-                  <span>
-                    Main Bazaar Charhoi, Gornal,
-                    <br />
-                    District Kotli, Azad Kashmir, Pakistan
-                  </span>
-                </div>
-                <div className="flex items-center mt-2">
-                  <FaPhone className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <a
-                    href="tel:00447777279710"
-                  className="hover:text-primary transition"
-                >
-                  00447777279710
-                </a>
-              </div>
-              </div>
-
-              {/* ✉️ Email */}
-              <div className="flex items-center">
-                <FaEnvelope className="w-4 h-4 mr-2 flex-shrink-0" />
-                <a
-                  href="mailto:contact@riazbakers.co.uk"
-                  className="hover:text-primary transition"
-                >
-                  contact@riazbakers.co.uk
-                </a>
-              </div>
+          {/* Left Side: Text & Input */}
+          <div className="relative z-10 w-full md:w-1/2 pr-0 md:pr-10 mb-8 md:mb-0">
+            <h2 className="text-3xl font-bold text-[#E25C1D] mb-4">
+              Special Offers & News
+            </h2>
+            <p className="text-gray-600 mb-8 max-w-md">
+              Subscribe now for news, promotions and more delivered right to your inbox
+            </p>
+            
+            <div className="flex flex-col gap-4 max-w-md">
+              <input 
+                type="email" 
+                placeholder="Enter Email Address" 
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FFC72C]"
+              />
+              <button className="bg-[#FFC72C] text-black font-bold px-8 py-3 rounded-lg hover:bg-[#ffcf4b] transition-colors w-fit shadow-md uppercase text-sm">
+                Subscribe
+              </button>
             </div>
+          </div>
+
+          {/* Right Side: Graphic Text */}
+          <div className="relative z-10 w-full md:w-1/2 flex flex-col items-center md:items-end text-center md:text-right mt-8 md:mt-0">
+             <div className="relative">
+                {/* 3D Megaphone Icon */}
+                <div className="absolute -right-12 -top-24 transform rotate-[-15deg] hidden md:block z-20">
+                   <img 
+                      src="https://cdn-icons-png.flaticon.com/512/1160/1160358.png" 
+                      alt="Megaphone"
+                      className="w-32 h-32 object-contain drop-shadow-xl filter hue-rotate-15 brightness-110"
+                   />
+                </div>
+                
+                <h2 className="font-black text-white leading-none tracking-tighter drop-shadow-sm flex flex-col items-end">
+                  <span className="text-4xl md:text-5xl text-[#FFC72C] md:text-white mb-2" style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.1)' }}>let's talk</span>
+                  <span className="text-6xl md:text-8xl text-white">BURLAYS</span>
+                </h2>
+             </div>
           </div>
         </div>
+      </div>
 
-        {/* Social Icons & Copyright */}
-        <div className="border-t border-grayLight mt-8 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex space-x-4 mb-4 md:mb-0">
-              <a
-                href="#"
-                className="bg-grayLight hover:bg-primary p-3 rounded-full transition-colors"
-              >
-                <FaFacebook className="w-5 h-5 text-darkSecondary" />
-              </a>
-              <a
-                href="#"
-                className="bg-grayLight hover:bg-primary p-3 rounded-full transition-colors"
-              >
-                <FaInstagram className="w-5 h-5 text-darkSecondary" />
-              </a>
-              <a
-                href="#"
-                className="bg-grayLight hover:bg-primary p-3 rounded-full transition-colors"
-              >
-                <FaPhone className="w-5 h-5 text-darkSecondary" />
-              </a>
-            </div>
-            <div className="text-gray-600 text-sm text-center md:text-right">
-              <p>© {new Date().getFullYear()}{" "}
-                <span className="text-darkSecondary font-semibold">Albasti</span>. All
-                rights reserved.
-              </p>
-              <p>Powered by Albasti</p>
-              <p>Developed by Ali Aqdas</p>
-            </div>
+      {/* Bottom Footer */}
+      <div className="border-t border-gray-100 py-8 bg-white">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-4">
+          
+          <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
+             <img src="/logo.png" alt="Burlays" className="h-6 w-auto opacity-50 grayscale" />
+             <span>Burlays Copyright © 2026. All Rights Reserved.</span>
           </div>
+
+          <div className="flex gap-4 text-xs font-bold text-gray-400 uppercase tracking-wide">
+             <Link to="#" className="hover:text-[#E25C1D] transition-colors">Terms & Conditions</Link>
+             <span>|</span>
+             <Link to="#" className="hover:text-[#E25C1D] transition-colors">Privacy Policy</Link>
+          </div>
+
         </div>
       </div>
     </footer>
