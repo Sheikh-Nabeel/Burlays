@@ -16,7 +16,7 @@ const SplashScreen = () => {
           <div className="w-3 h-3 rounded-full loading-pulse" style={{backgroundColor: '#FFC72C', animationDelay: '0.4s'}}></div>
         </div>
       </div>
-      <p className="text-sm text-gray-500">Designed & Developed by ALI AQDAS</p>
+      <p className="text-sm text-gray-500"></p>
     </div>
   )
 }

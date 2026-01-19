@@ -56,31 +56,31 @@ export const MOCK_CATEGORIES = [
 
 export const BRANCHES = [
   {
-    id: 1,
-    name: "Al-Riaz Bakers, Fast Food, Restaurant & General Store",
-    timing: "6 AM - 11 PM",
-    phone: "03445556665",
+    id: '1',
+    name: "Burlays F-11 Markaz",
+    timing: "11 AM - 3 AM",
+    phone: "051-111-222-333",
     image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500',
-    mapsUrl: "https://maps.app.goo.gl/u2vxz2gsrenRcVi29",
-    address: "Main Bazaar Charhoi, Gornal, District Kotli, Azad Kashmir, Pakistan"
+    mapsUrl: "https://goo.gl/maps/dummy",
+    address: "Shop # 12, Ground Floor, Select One Plaza, F-11 Markaz, Islamabad"
   },
   {
-    id: 2,
-    name: "Riaz Bakers & Restaurant Branch-2",
-    timing: "6 AM - 11 PM",
-    phone: "03445556665",
+    id: '2',
+    name: "Burlays Gulberg Greens",
+    timing: "12 PM - 2 AM",
+    phone: "051-444-555-666",
     image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500',
-    mapsUrl: "https://maps.app.goo.gl/cxESpHMGZ5hLiJLK7",
-    address: "Branch 2 Location, Pakistan"
+    mapsUrl: "https://goo.gl/maps/dummy",
+    address: "Plot # 5, Civic Center, Gulberg Greens, Islamabad"
   },
   {
-    id: 3,
-    name: "Riaz Bakery UK Branch",
-    timing: "8 AM - 10 PM",
-    phone: "92-3445556665",
+    id: '3',
+    name: "Burlays Bahria Town",
+    timing: "11 AM - 1 AM",
+    phone: "051-777-888-999",
     image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=500',
-    mapsUrl: "https://maps.app.goo.gl/JxCEYg7v6v1DuDB39",
-    address: "Working, UK"
+    mapsUrl: "https://goo.gl/maps/dummy",
+    address: "Phase 4, Civic Center, Bahria Town, Rawalpindi"
   }
 ]
 

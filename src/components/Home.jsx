@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import SplashScreen from "./SplashScreen";
 import HeroCarousel from "./HeroCarousel";
 import CategoriesGrid from "./CategoriesGrid";
@@ -11,6 +12,7 @@ import SignatureOfferings from "./SignatureOfferings";
 
 function Home() {
   const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
 
   const homeRef = useRef(null);
   const menuRef = useRef(null);
@@ -23,6 +25,17 @@ function Home() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (location.hash === '#blogs-section') {
+      const element = document.getElementById('blogs-section');
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, [location, isLoading]);
 
   const scrollToSection = (ref) => {
     ref.current?.scrollIntoView({
@@ -59,7 +72,7 @@ function Home() {
           <DownloadApp />
         </section>
 
-        <section>
+        <section id="blogs-section">
           <BlogSection />
         </section>
  

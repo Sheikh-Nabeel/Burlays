@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { FaMapMarkerAlt, FaClock, FaPhoneAlt } from 'react-icons/fa';
 import { BRANCHES } from '../utils/constants';
+import { useNavigate } from 'react-router-dom';
 
 const BranchesSection = () => {
+  const navigate = useNavigate();
   const [selectedBranchId, setSelectedBranchId] = useState(BRANCHES[0].id);
   const selectedBranch = BRANCHES.find(b => b.id === selectedBranchId) || BRANCHES[0];
 
@@ -12,11 +14,14 @@ const BranchesSection = () => {
         
         {/* Navigation Tabs */}
         <div className="flex justify-center gap-8 mb-12 text-lg font-semibold border-b border-gray-800 pb-4">
-          <button className="text-white border-b-2 border-[#FFC72C] pb-4 -mb-4.5">
+          <button 
+            onClick={() => navigate('/branches')}
+            className="text-white border-b-2 border-[#FFC72C] pb-4 -mb-4.5"
+          >
             Branches Location
           </button>
           <button className="text-gray-500 hover:text-white transition-colors pb-4">
-            Download APP
+            Download App
           </button>
           <button className="text-gray-500 hover:text-white transition-colors pb-4">
             Brand Story

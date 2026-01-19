@@ -10,15 +10,15 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
   const { location } = useLocation();
 
   const [address, setAddress] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
   const isPakistan = location?.countryCode === "PK";
+  const currencySymbol = isPakistan ? "Rs." : "£";
   const total = getTotalPrice();
 
   const handlePlaceOrder = async () => {
-    if (!address || !email || cartItems.length === 0) {
+    if (!address || !phone || cartItems.length === 0) {
       toast.warn("⚠️ Please fill all fields and add items to cart!");
       return;
     }
@@ -37,88 +37,95 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
   };
 
   return (
-    <div className="bg-gradient-to-b from-black via-[#0F0F10] to-black min-h-screen flex flex-col text-white">
-      <div className="bg-[#1a1a1a]/80 backdrop-blur-xl fixed top-0 w-full text-white flex items-center px-4 py-4 border-b border-gray-800 z-50">
-        <FaArrowLeft
-          className="mr-3 cursor-pointer text-xl hover:text-[#FFC72C] transition"
-          onClick={() => navigate(-1)}
-        />
-        <h1 className="text-xl font-bold tracking-wide">Checkout</h1>
+    <div className="bg-white min-h-screen flex flex-col text-gray-900 pb-32">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600 mr-4"
+          >
+            <FaArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-xl font-bold">Checkout</h1>
+        </div>
       </div>
 
-      <div className="flex-1 px-4 mb-20 py-8 space-y-6 mt-16 w-full md:w-[70%] lg:w-[50%] mx-auto">
-        <div className="rounded-2xl p-5 bg-[#1a1a1a]/70 backdrop-blur-md border border-gray-700 shadow-lg">
-          <h2 className="font-semibold text-lg mb-3">Order Summary</h2>
-          <div className="space-y-2 text-sm sm:text-base">
-            <div className="flex justify-between">
+      <div className="flex-1 px-4 py-8 w-full max-w-3xl mx-auto space-y-8">
+        
+        {/* Order Summary */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="font-bold text-lg mb-4">Order Summary</h2>
+          <div className="space-y-3 text-sm sm:text-base">
+            <div className="flex justify-between text-gray-600">
               <span>Subtotal</span>
-              <span>{isPakistan ? `Rs ${total}` : `£${total}`}</span>
+              <span>{currencySymbol} {total}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-gray-600">
               <span>Tax & Fees</span>
               <span>0.0</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-gray-600">
               <span>Delivery</span>
-              <span className="text-green-400">Free</span>
+              <span className="text-green-600 font-medium">Free</span>
             </div>
+            <hr className="border-gray-100 my-2" />
+            <div className="flex justify-between font-bold text-lg text-gray-900">
+              <span>Total</span>
+              <span>{currencySymbol} {total}</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              Estimated delivery: 15 - 30 mins
+            </p>
           </div>
-          <hr className="border-gray-700 my-3" />
-          <div className="flex justify-between font-bold text-lg">
-            <span>Total</span>
-            <span>{isPakistan ? `Rs ${total}` : `£${total}`}</span>
-          </div>
-          <p className="text-sm text-gray-400 mt-2">
-            Estimated delivery: 15 - 30 mins
-          </p>
         </div>
 
+        {/* Delivery Details Form */}
         <div className="space-y-4">
+          <h2 className="font-bold text-lg px-1">Delivery Details</h2>
           <textarea
             placeholder="Delivery Address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="w-full bg-[#1E1E1E]/70 backdrop-blur-md text-white p-4 rounded-xl border border-gray-700 focus:border-[#FFC72C] outline-none transition"
+            className="w-full bg-gray-50 text-gray-900 p-4 rounded-xl border border-gray-200 focus:border-[#FFC72C] focus:ring-1 focus:ring-[#FFC72C] outline-none transition resize-none"
             rows="3"
           />
           <input
-            type="number"
+            type="tel"
             placeholder="Phone Number"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full bg-[#1E1E1E]/70 backdrop-blur-md text-white p-4 rounded-xl border border-gray-700 focus:border-[#FFC72C] outline-none transition"
-          />
-          <input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-[#1E1E1E]/70 backdrop-blur-md text-white p-4 rounded-xl border border-gray-700 focus:border-[#FFC72C] outline-none transition"
+            className="w-full bg-gray-50 text-gray-900 p-4 rounded-xl border border-gray-200 focus:border-[#FFC72C] focus:ring-1 focus:ring-[#FFC72C] outline-none transition"
           />
         </div>
 
-        <div className="rounded-2xl p-5 bg-[#1a1a1a]/70 backdrop-blur-md border border-gray-700 shadow-lg">
-          <h2 className="font-semibold mb-3">Payment Method</h2>
-          <div className="space-y-4">
-            <div className="border border-[#FFC72C] rounded-xl p-4 bg-[#1E1E1E]/30">
-              Cash On Delivery
-            </div>
+        {/* Payment Method */}
+        <div className="space-y-4">
+          <h2 className="font-bold text-lg px-1">Payment Method</h2>
+          <div className="border-2 border-[#FFC72C] bg-[#FFC72C]/5 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full border-4 border-[#FFC72C]"></div>
+            <span className="font-medium">Cash On Delivery</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-[#1a1a1a]/90 backdrop-blur-lg fixed bottom-0 w-full text-white flex justify-between items-center px-6 py-5 border-t border-gray-800 shadow-xl">
-        <span className="text-xl font-bold">
-          {isPakistan ? `Rs ${total}` : `£${total}`}
-        </span>
-        <button
-          onClick={handlePlaceOrder}
-          disabled={loading}
-          className="px-10 py-3 rounded-full font-semibold shadow-lg hover:shadow-2xl transition text-lg disabled:opacity-50 animate-pulse text-black"
-          style={{ backgroundColor: "#FFC72C" }}
-        >
-          {loading ? "Processing..." : "Place Order"}
-        </button>
+      {/* Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+                <span className="text-sm text-gray-500">Total Amount</span>
+                <span className="text-xl font-bold text-gray-900">
+                    {currencySymbol} {total}
+                </span>
+            </div>
+            <button
+            onClick={handlePlaceOrder}
+            disabled={loading}
+            className="px-8 py-3 rounded-xl font-bold shadow-sm hover:shadow-md transition-all text-lg disabled:opacity-70 bg-[#FFC72C] text-black hover:bg-[#ffcf4b] min-w-[160px]"
+            >
+            {loading ? "Processing..." : "Place Order"}
+            </button>
+        </div>
       </div>
     </div>
   );

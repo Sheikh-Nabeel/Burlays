@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaShoppingCart, FaUser, FaPhone, FaMapMarkerAlt, FaTh, FaSearch, FaMapPin } from "react-icons/fa";
+import { CgMenuRight, CgShoppingCart, CgProfile } from "react-icons/cg";
 import { useCart } from "../contexts/CartContext";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { CATALOG } from "../utils/constants";
@@ -17,6 +18,18 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
 
   // Check if we are on the menu page
   const isMenuPage = location.pathname === '/menu';
+
+  const handleScrollToBlogs = () => {
+    setIsMenuOpen(false);
+    if (location.pathname === '/') {
+      const element = document.getElementById('blogs-section');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      navigate('/#blogs-section');
+    }
+  };
 
   // Navbar hide/show on scroll
   useEffect(() => {
@@ -42,19 +55,11 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
               className="p-1 rounded-md"
               onClick={() => setIsMenuOpen(true)}
             >
-               <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M4 7H20M4 12H20M4 17H20" stroke="#FFC72C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+               <CgMenuRight size={28} style={{ color: '#FFC72C' }} />
             </button>
             <Link to="/" className="flex items-center gap-2">
-              <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
-              <span className="font-extrabold text-2xl tracking-tight hidden md:block" style={{ color: '#1E1E1E' }}>Burlays</span>
+              <img src="/logo.png" alt="Logo" className="h-8 md:h-10 w-auto" />
+              <span className="font-extrabold text-xl md:text-2xl tracking-tight text-[#1E1E1E]">Burlays</span>
             </Link>
           </div>
 
@@ -80,21 +85,40 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
           )}
 
           <div className="flex items-center gap-3">
-            <Link to="/cart" className="relative flex items-center gap-2 px-5 py-2.5 rounded-md font-bold text-sm shadow-sm transition-transform active:scale-95" style={{ backgroundColor: '#FFC72C', color: '#000000' }}>
-              <FaShoppingCart className="w-4 h-4" />
-              <span>CART</span>
-              <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shadow-sm" style={{ backgroundColor: '#FF0000', color: '#FFFFFF' }}>
-                {getTotalItems()}
-              </span>
-            </Link>
-            <button
-              className="flex items-center gap-2 px-5 py-2.5 rounded-md font-bold text-sm shadow-sm transition-transform active:scale-95"
-              onClick={() => setIsMenuOpen(true)}
-              style={{ backgroundColor: '#FFC72C', color: '#000000' }}
-            >
-              <FaUser className="w-4 h-4" />
-              <span>LOGIN</span>
-            </button>
+            {/* Desktop View */}
+            <div className="hidden md:flex items-center gap-3">
+              <Link to="/cart" className="relative flex items-center gap-2 px-5 py-2.5 rounded-md font-bold text-sm shadow-sm transition-transform active:scale-95" style={{ backgroundColor: '#FFC72C', color: '#000000' }}>
+                <FaShoppingCart className="w-4 h-4" />
+                <span>CART</span>
+                <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shadow-sm" style={{ backgroundColor: '#FF0000', color: '#FFFFFF' }}>
+                  {getTotalItems()}
+                </span>
+              </Link>
+              <button
+                className="flex items-center gap-2 px-5 py-2.5 rounded-md font-bold text-sm shadow-sm transition-transform active:scale-95"
+                onClick={() => navigate('/login')}
+                style={{ backgroundColor: '#FFC72C', color: '#000000' }}
+              >
+                <FaUser className="w-4 h-4" />
+                <span>LOGIN</span>
+              </button>
+            </div>
+
+            {/* Mobile View */}
+            <div className="flex md:hidden items-center gap-4">
+              <Link to="/cart" className="relative flex items-center gap-1 text-[#E25C1D]">
+                <CgShoppingCart className="w-7 h-7" />
+                <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-[#E25C1D] text-white">
+                  {getTotalItems()}
+                </span>
+              </Link>
+              <button
+                onClick={() => navigate('/login')}
+                className="text-[#E25C1D]"
+              >
+                <CgProfile className="w-7 h-7" />
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -128,7 +152,11 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                           <div className="text-sm font-bold text-[#1E1E1E]">World of flavors</div>
                         </div>
                      </div>
-                     <button className="w-fit px-6 py-2 rounded border font-bold text-xs tracking-wider" style={{ borderColor: '#000000', color: '#000000' }}>
+                     <button 
+                       onClick={() => { navigate('/login'); setIsMenuOpen(false); }}
+                       className="w-fit px-6 py-2 rounded border font-bold text-xs tracking-wider" 
+                       style={{ borderColor: '#000000', color: '#000000' }}
+                     >
                         LOGIN
                      </button>
                   </div>
@@ -144,18 +172,21 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                     
                     <button 
                       className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
-                      onClick={() => { navigate('/StoreLocator'); setIsMenuOpen(false); }}
+                      onClick={() => { navigate('/branches'); setIsMenuOpen(false); }}
                     >
                       <FaMapMarkerAlt className="w-5 h-5 text-gray-600" />
                       <span className="font-semibold text-sm text-[#1E1E1E]">Branch Locator</span>
                     </button>
                     
                     <div className="h-px bg-gray-100 my-2 mx-6"></div>
-  
-                    <button className="w-full text-left px-6 py-3 text-sm font-medium text-gray-600 hover:text-black transition-colors">
-                      Blog
-                    </button>
-                    <button className="w-full text-left px-6 py-3 text-sm font-medium text-gray-600 hover:text-black transition-colors">
+
+                  <button 
+                    onClick={handleScrollToBlogs}
+                    className="w-full text-left px-6 py-3 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                  >
+                    Blog
+                  </button>
+                  <button className="w-full text-left px-6 py-3 text-sm font-medium text-gray-600 hover:text-black transition-colors">
                       Privacy Policy
                     </button>
                   </div>

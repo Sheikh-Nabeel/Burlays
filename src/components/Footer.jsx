@@ -9,9 +9,17 @@ const Footer = () => {
         <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col md:flex-row items-center justify-between">
           
           {/* Wave Background Decoration - Top Right */}
-          <div className="absolute top-0 right-0 w-[60%] h-full bg-[#FFC72C] z-0" 
+          <div className="absolute top-0 right-0 w-[60%] h-full bg-[#FFC72C] z-0 hidden md:block" 
                style={{ 
                  clipPath: "ellipse(80% 100% at 80% 0%)",
+                 opacity: 0.9 
+               }}>
+          </div>
+          
+          {/* Mobile Wave Background */}
+          <div className="absolute top-0 right-0 w-full h-[40%] bg-[#FFC72C] z-0 md:hidden" 
+               style={{ 
+                 clipPath: "ellipse(100% 80% at 100% 0%)",
                  opacity: 0.9 
                }}>
           </div>
@@ -49,9 +57,9 @@ const Footer = () => {
                    />
                 </div>
                 
-                <h2 className="font-black text-white leading-none tracking-tighter drop-shadow-sm flex flex-col items-end">
+                <h2 className="font-black leading-none tracking-tighter drop-shadow-sm flex flex-col items-center md:items-end">
                   <span className="text-4xl md:text-5xl text-[#FFC72C] md:text-white mb-2" style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.1)' }}>let's talk</span>
-                  <span className="text-6xl md:text-8xl text-white">BURLAYS</span>
+                  <span className="text-6xl md:text-8xl text-[#FFC72C] md:text-white">BURLAYS</span>
                 </h2>
              </div>
           </div>
