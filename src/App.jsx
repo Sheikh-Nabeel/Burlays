@@ -12,17 +12,28 @@ import "react-toastify/dist/ReactToastify.css";
 import PaymentScreen from "./components/PaymentScreen";
  import Header from "./components/Header";
 import { Link, useLocation } from "react-router-dom";
-import LoginPage from "./components/LoginPage";
+import LoginPage from "./components/LoginPage.jsx";
 import BlogDetail from "./components/BlogDetail";
 
 import BranchLocatorPage from "./components/BranchLocatorPage";
 import BranchDetailsPage from "./components/BranchDetailsPage";
 
+import BranchSelection from "./components/BranchSelection";
+
 const App = () => {
+  const [selectedBranch, setSelectedBranch] = React.useState(() => {
+    const saved = localStorage.getItem('selectedBranch');
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const location = useLocation();
   const hideFloatingButtonPaths = ['/login', '/cart', '/PaymentScreen', '/branches'];
   const shouldHideFloatingButton = hideFloatingButtonPaths.some(path => location.pathname.startsWith(path));
   const isLoginPage = location.pathname === '/login';
+
+  if (!selectedBranch) {
+    return <BranchSelection onSelectBranch={setSelectedBranch} />;
+  }
 
   return (
     <div className="bg-white text-darkSecondary font-serif relative">

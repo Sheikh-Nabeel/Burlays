@@ -1,13 +1,91 @@
-import React, { useState } from 'react';
-import { FaPhoneAlt, FaUser, FaCommentDots, FaArrowLeft } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { FaPhoneAlt, FaUser, FaCommentDots, FaArrowLeft, FaSpinner } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
+import { auth } from '../firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { toast } from 'react-toastify';
 
 const LoginPage = () => {
-  const [step, setStep] = useState('initial'); // 'initial' or 'phone'
+  const navigate = useNavigate();
+  const [step, setStep] = useState('initial'); // 'initial', 'phone', 'otp'
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [confirmationResult, setConfirmationResult] = useState(null);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        navigate('/');
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
+
+  const onCaptchVerify = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+          // onSignup();
+        },
+        'expired-callback': () => {
+          // Response expired. Ask user to solve reCAPTCHA again.
+        }
+      });
+    }
+  }
+
+  const onSignup = () => {
+    if (phoneNumber.length < 10) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+
+    setLoading(true);
+    onCaptchVerify();
+
+    const appVerifier = window.recaptchaVerifier;
+    const formatPh = "+92" + phoneNumber;
+
+    signInWithPhoneNumber(auth, formatPh, appVerifier)
+      .then((confirmationResult) => {
+        window.confirmationResult = confirmationResult;
+        setConfirmationResult(confirmationResult);
+        setLoading(false);
+        setStep('otp');
+        toast.success("OTP sent successfully!");
+      }).catch((error) => {
+        console.log(error);
+        setLoading(false);
+        toast.error("Error sending OTP. Try again.");
+        if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+            window.recaptchaVerifier = null;
+        }
+      });
+  }
+
+  const onOTPVerify = () => {
+    setLoading(true);
+    window.confirmationResult.confirm(otp).then(async (res) => {
+      setUser(res.user);
+      setLoading(false);
+      toast.success("Login Successful!");
+      navigate('/');
+    }).catch((err) => {
+      console.log(err);
+      setLoading(false);
+      toast.error("Invalid OTP");
+    });
+  }
 
   return (
     <div className="min-h-screen flex bg-white">
+      <div id="recaptcha-container"></div>
       {/* Left Side - Form */}
       <div className="w-full md:w-1/2 flex flex-col relative">
         {/* Header/Logo Area on Mobile */}
@@ -18,10 +96,13 @@ const LoginPage = () => {
             </Link>
         </div>
 
-        {/* Back Button (only in phone step) */}
-        {step === 'phone' && (
+        {/* Back Button (only in phone/otp step) */}
+        {step !== 'initial' && (
           <button 
-            onClick={() => setStep('initial')}
+            onClick={() => {
+                if (step === 'otp') setStep('phone');
+                else setStep('initial');
+            }}
             className="absolute top-6 left-6 text-gray-600 hover:text-black hidden md:block"
           >
             <FaArrowLeft className="w-5 h-5" />
@@ -57,7 +138,10 @@ const LoginPage = () => {
                             CONTINUE WITH PHONE
                         </button>
 
-                        <button className="w-full bg-white border-2 border-gray-200 hover:border-gray-300 text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors">
+                        <button 
+                            onClick={() => navigate('/')}
+                            className="w-full bg-white border-2 border-gray-200 hover:border-gray-300 text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors"
+                        >
                             <div className="w-6 h-6 bg-black text-white rounded flex items-center justify-center text-xs">
                                 <span className="font-serif font-bold">As</span>
                             </div>
@@ -65,7 +149,7 @@ const LoginPage = () => {
                         </button>
                     </div>
                 </div>
-            ) : (
+            ) : step === 'phone' ? (
                 <div className="w-full max-w-md text-center">
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
                         Enter Your Phone Number
@@ -88,10 +172,40 @@ const LoginPage = () => {
                     </div>
 
                     <button 
-                        className="w-full bg-[#FFC72C] hover:bg-[#ffcf4b] text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-sm"
+                        onClick={onSignup}
+                        disabled={loading}
+                        className="w-full bg-[#FFC72C] hover:bg-[#ffcf4b] text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-sm disabled:opacity-50"
                     >
-                        <FaCommentDots />
-                        SEND OTP
+                        {loading ? <FaSpinner className="animate-spin" /> : <FaCommentDots />}
+                        {loading ? "SENDING..." : "SEND OTP"}
+                    </button>
+                </div>
+            ) : (
+                <div className="w-full max-w-md text-center">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                        Verify OTP
+                    </h1>
+                    <p className="text-gray-400 text-sm mb-10">
+                        Enter the code sent to +92 {phoneNumber}
+                    </p>
+
+                    <div className="mb-8">
+                        <input 
+                            type="text" 
+                            placeholder="Enter 6-digit OTP" 
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            maxLength={6}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FFC72C] placeholder-gray-300 font-medium text-center tracking-widest text-lg"
+                        />
+                    </div>
+
+                    <button 
+                        onClick={onOTPVerify}
+                        disabled={loading}
+                        className="w-full bg-[#FFC72C] hover:bg-[#ffcf4b] text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-sm disabled:opacity-50"
+                    >
+                        {loading ? <FaSpinner className="animate-spin" /> : "VERIFY OTP"}
                     </button>
                 </div>
             )}

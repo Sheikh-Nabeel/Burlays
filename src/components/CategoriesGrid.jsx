@@ -1,13 +1,45 @@
 // components/CategoriesGrid.jsx
-import React, { useRef } from "react";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import React, { useRef, useState, useEffect } from "react";
+import { FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { getCategories } from "../utils/constants";
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 const CategoriesGrid = () => {
-  const categories = getCategories();
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const selectedBranch = JSON.parse(localStorage.getItem('selectedBranch'));
+      
+      if (!selectedBranch) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Construct the path: branches/{branchId}/categories
+        const categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
+        const querySnapshot = await getDocs(categoriesRef);
+        
+        const categoriesData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleCategoryClick = (catId) => {
     navigate(`/menu?category=${catId}`);
@@ -24,6 +56,14 @@ const CategoriesGrid = () => {
       }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="bg-white py-10 flex justify-center">
+        <FaSpinner className="animate-spin text-3xl text-[#FFC72C]" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white py-10">
@@ -64,7 +104,7 @@ const CategoriesGrid = () => {
                 <div className="bg-white rounded-xl border border-transparent group-hover/card:border-[#FFC72C] transition-all duration-300 p-4 h-full flex flex-col items-center shadow-sm hover:shadow-md">
                   <div className="w-48 h-48 mb-4 rounded-full overflow-hidden">
                     <img
-                      src={cat.imageUrl}
+                      src={cat.imageUrl || "https://via.placeholder.com/150"}
                       alt={cat.name}
                       className="w-full h-full object-cover transform group-hover/card:scale-105 transition-transform duration-500"
                     />

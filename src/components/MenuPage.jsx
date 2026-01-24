@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { getAllProducts, getCategories } from "../utils/constants";
 import { useCart } from "../contexts/CartContext";
-import { FaShoppingCart, FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaShoppingCart, FaPlus, FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 import { motion } from "framer-motion";
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 const MenuPage = () => {
   const [searchParams] = useSearchParams();
@@ -11,21 +12,65 @@ const MenuPage = () => {
   const { addToCart, cartItems, getTotalPrice } = useCart();
   
   const [activeCategory, setActiveCategory] = useState("");
-  const categories = getCategories();
-  const products = getAllProducts();
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const scrollRef = useRef(null);
   
   const categoryRefs = useRef({});
 
+  // Fetch categories and products from Firebase
+  useEffect(() => {
+    const fetchMenuData = async () => {
+      const selectedBranch = JSON.parse(localStorage.getItem('selectedBranch'));
+      
+      if (!selectedBranch) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // 1. Get Categories
+        const categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
+        const categoriesSnapshot = await getDocs(categoriesRef);
+        
+        const categoriesData = await Promise.all(categoriesSnapshot.docs.map(async (categoryDoc) => {
+          // 2. Get Products for each Category
+          const productsRef = collection(db, `branches/${selectedBranch.id}/categories/${categoryDoc.id}/Products`);
+          const productsSnapshot = await getDocs(productsRef);
+          const productsData = productsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+
+          return {
+            id: categoryDoc.id,
+            ...categoryDoc.data(),
+            products: productsData
+          };
+        }));
+        
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Error fetching menu data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuData();
+  }, []);
+
   // Initialize refs
   useEffect(() => {
-    products.forEach(cat => {
+    categories.forEach(cat => {
       categoryRefs.current[cat.id] = React.createRef();
     });
-  }, [products]);
+  }, [categories]);
 
   // Handle initial scroll based on URL param
   useEffect(() => {
+    if (loading || categories.length === 0) return;
+
     const catId = searchParams.get("category");
     if (catId && categoryRefs.current[catId]?.current) {
       setTimeout(() => {
@@ -34,16 +79,24 @@ const MenuPage = () => {
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
   
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth"
-        });
+        const container = document.getElementById('products-container');
+        if (container) {
+            // Calculate position inside the container
+            const containerTop = container.getBoundingClientRect().top;
+            const scrollOffset = elementPosition - containerTop + container.scrollTop - 20; // 20px padding
+            
+            container.scrollTo({
+                top: scrollOffset,
+                behavior: "smooth"
+            });
+        }
+
         setActiveCategory(catId);
-      }, 100);
-    } else if (products.length > 0) {
-       setActiveCategory(products[0].id);
+      }, 500); // Increased timeout to ensure render
+    } else if (categories.length > 0) {
+       setActiveCategory(categories[0].id);
     }
-  }, [searchParams, products]);
+  }, [searchParams, categories, loading]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,9 +104,10 @@ const MenuPage = () => {
       if (!container) return;
       const scrollPosition = container.scrollTop + 200;
 
-      for (const cat of products) {
+      for (const cat of categories) {
         const element = categoryRefs.current[cat.id]?.current;
         if (element) {
+          // Since we are inside a scrolling container, we need to use offsetTop relative to the container
           const { offsetTop, offsetHeight } = element;
           if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
             setActiveCategory(cat.id);
@@ -68,7 +122,7 @@ const MenuPage = () => {
       container.addEventListener("scroll", handleScroll);
       return () => container.removeEventListener("scroll", handleScroll);
     }
-  }, [products]);
+  }, [categories]);
 
   const scrollToCategory = (catId) => {
     setActiveCategory(catId);
@@ -92,6 +146,14 @@ const MenuPage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <FaSpinner className="animate-spin text-4xl text-[#FFC72C]" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] bg-gray-50">
       {/* Sticky Category Nav */}
@@ -110,7 +172,7 @@ const MenuPage = () => {
                 className="flex overflow-x-auto gap-3 scrollbar-hide px-8"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-                {products.map((cat) => (
+                {categories.map((cat) => (
                 <button
                     key={cat.id}
                     onClick={() => scrollToCategory(cat.id)}
@@ -138,7 +200,7 @@ const MenuPage = () => {
       <div className="flex-1 overflow-hidden max-w-7xl mx-auto w-full px-4 mt-8 flex gap-8">
         {/* Main Content - Product List */}
         <div id="products-container" className="flex-1 overflow-y-auto space-y-12 pr-4 pb-20 scrollbar-thin">
-          {products.map((cat) => (
+          {categories.map((cat) => (
             <div 
                 key={cat.id} 
                 id={cat.id} 
@@ -151,7 +213,7 @@ const MenuPage = () => {
                   <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow h-full">
                     <div className="relative w-full h-48 mb-4">
                         <img 
-                            src={product.productPic} 
+                            src={product.imagepath || "https://via.placeholder.com/150"} 
                             alt={product.name} 
                             className="w-full h-full object-cover rounded-lg"
                         />
@@ -169,10 +231,10 @@ const MenuPage = () => {
                         <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
                             <div className="flex flex-col">
                                 <span className="text-xs text-gray-500 font-medium">Starting Price</span>
-                                <span className="text-[#E25C1D] font-bold text-lg">Rs. {product.price_pk.toLocaleString()}</span>
+                                <span className="text-[#E25C1D] font-bold text-lg">Rs. {Number(product.price).toLocaleString()}</span>
                             </div>
                             <button 
-                                onClick={() => addToCart(product)}
+                                onClick={() => addToCart({ ...product, price_pk: Number(product.price) })}
                                 className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-sm font-bold transition-colors border border-gray-200"
                             >
                                 <FaPlus className="w-3 h-3 text-[#FFC72C]" />
