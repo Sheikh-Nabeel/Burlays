@@ -1,22 +1,55 @@
-import React, { useState } from 'react';
-import { FaMapMarkerAlt } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { BRANCHES } from '../utils/constants';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 const BranchLocatorPage = () => {
   const navigate = useNavigate();
   const [selectedCity, setSelectedCity] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'branches'));
+        const branchesData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setBranches(branchesData);
+      } catch (error) {
+        console.error("Error fetching branches:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBranches();
+  }, []);
 
   // Filter branches based on city and search query
-  const filteredBranches = BRANCHES.filter(branch => {
+  const filteredBranches = branches.filter(branch => {
+    const branchName = branch.name || '';
+    const branchLocation = branch.location || ''; // Changed from address to location based on Firestore schema
+
     // Extract city from address for demo purposes (simple check)
-    const cityMatch = !selectedCity || branch.address.toLowerCase().includes(selectedCity.toLowerCase());
+    const cityMatch = !selectedCity || branchLocation.toLowerCase().includes(selectedCity.toLowerCase());
     const queryMatch = !searchQuery || 
-      branch.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      branch.address.toLowerCase().includes(searchQuery.toLowerCase());
+      branchName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      branchLocation.toLowerCase().includes(searchQuery.toLowerCase());
     return cityMatch && queryMatch;
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <FaSpinner className="animate-spin text-4xl text-[#FFC72C]" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -76,7 +109,7 @@ const BranchLocatorPage = () => {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-gray-900 mb-1">{branch.name}</h3>
-                                    <p className="text-sm text-gray-500 leading-relaxed">{branch.address}</p>
+                                    <p className="text-sm text-gray-500 leading-relaxed">{branch.location}</p>
                                 </div>
                             </div>
                             <button 

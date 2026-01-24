@@ -178,6 +178,17 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                       <span className="font-semibold text-sm text-[#1E1E1E]">Branch Locator</span>
                     </button>
                     
+                    <button 
+                      className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
+                      onClick={() => { 
+                        localStorage.removeItem('selectedBranch');
+                        window.location.href = '/';
+                      }}
+                    >
+                      <FaMapPin className="w-5 h-5 text-gray-600" />
+                      <span className="font-semibold text-sm text-[#1E1E1E]">Change Branch</span>
+                    </button>
+                    
                     <div className="h-px bg-gray-100 my-2 mx-6"></div>
 
                   <button 
