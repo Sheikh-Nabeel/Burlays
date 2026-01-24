@@ -30,6 +30,18 @@ const BranchLocatorPage = () => {
     fetchBranches();
   }, []);
 
+  // Extract unique cities for the filter
+  const uniqueCities = [...new Set(branches.map(branch => {
+      // Assuming location might be "Street, City, Country" or just "City"
+      // This is a simple heuristic; you might need better parsing depending on your data
+      const parts = (branch.location || '').split(',');
+      const city = parts.length > 1 ? parts[parts.length - 2].trim() : (branch.location || '');
+      // Or just return the whole location string if it's just the city name in your DB
+      // For now, let's assume the user might want to filter by the exact string if it's short, 
+      // or we can just use the whole location string as "City/Area"
+      return branch.location || '';
+  }))].filter(Boolean);
+
   // Filter branches based on city and search query
   const filteredBranches = branches.filter(branch => {
     const branchName = branch.name || '';
@@ -78,9 +90,10 @@ const BranchLocatorPage = () => {
                             onChange={(e) => setSelectedCity(e.target.value)}
                             className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 appearance-none focus:outline-none focus:border-[#FFC72C] text-gray-500"
                         >
-                            <option value="">Select City</option>
-                            <option value="Islamabad">Islamabad</option>
-                            <option value="Rawalpindi">Rawalpindi</option>
+                            <option value="">Select City/Location</option>
+                            {uniqueCities.map((city, index) => (
+                                <option key={index} value={city}>{city}</option>
+                            ))}
                         </select>
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-gray-400">

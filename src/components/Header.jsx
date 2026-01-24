@@ -19,6 +19,17 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   // Check if we are on the menu page
   const isMenuPage = location.pathname === '/menu';
 
+  const handleSearch = (e) => {
+    const query = e.target.value;
+    if (isMenuPage) {
+      // If already on menu page, just update the search param
+      navigate(`/menu?search=${encodeURIComponent(query)}`, { replace: true });
+    } else {
+      // If not on menu page, navigate to menu page with search param
+      navigate(`/menu?search=${encodeURIComponent(query)}`);
+    }
+  };
+
   const handleScrollToBlogs = () => {
     setIsMenuOpen(false);
     if (location.pathname === '/') {
@@ -70,6 +81,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                   <input 
                     type="text" 
                     placeholder="Find in burlays" 
+                    onChange={handleSearch}
                     className="w-full bg-gray-50 border-none rounded-md py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-[#FFC72C]"
                   />
               </div>

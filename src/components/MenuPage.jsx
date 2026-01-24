@@ -146,6 +146,18 @@ const MenuPage = () => {
     }
   };
 
+  // Filter products based on search query
+  const searchQuery = searchParams.get('search') || '';
+  
+  const filteredCategories = categories.map(cat => ({
+    ...cat,
+    products: cat.products.filter(product => 
+      !searchQuery || 
+      (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) || 
+      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  })).filter(cat => cat.products.length > 0);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -172,7 +184,7 @@ const MenuPage = () => {
                 className="flex overflow-x-auto gap-3 scrollbar-hide px-8"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-                {categories.map((cat) => (
+                {filteredCategories.map((cat) => (
                 <button
                     key={cat.id}
                     onClick={() => scrollToCategory(cat.id)}
@@ -200,7 +212,13 @@ const MenuPage = () => {
       <div className="flex-1 overflow-hidden max-w-7xl mx-auto w-full px-4 mt-8 flex gap-8">
         {/* Main Content - Product List */}
         <div id="products-container" className="flex-1 overflow-y-auto space-y-12 pr-4 pb-20 scrollbar-thin">
-          {categories.map((cat) => (
+          {filteredCategories.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+                <p className="text-xl font-bold text-gray-500 mb-2">No items found</p>
+                <p className="text-gray-400">Try searching for something else</p>
+            </div>
+          ) : (
+            filteredCategories.map((cat) => (
             <div 
                 key={cat.id} 
                 id={cat.id} 
@@ -226,7 +244,7 @@ const MenuPage = () => {
                     
                     <div className="flex-1 flex flex-col">
                         <h3 className="text-lg font-bold text-gray-800 mb-2">{product.name}</h3>
-                        <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">{product.description}</p>
+                        {product.description && <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">{product.description}</p>}
                         
                         <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
                             <div className="flex flex-col">
@@ -246,7 +264,7 @@ const MenuPage = () => {
                 ))}
               </div>
             </div>
-          ))}
+          )))}
         </div>
 
         {/* Right Sidebar - Cart */}
