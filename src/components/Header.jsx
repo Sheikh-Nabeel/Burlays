@@ -1,20 +1,40 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaShoppingCart, FaUser, FaPhone, FaMapMarkerAlt, FaTh, FaSearch, FaMapPin } from "react-icons/fa";
+import { FaShoppingCart, FaUser, FaPhone, FaMapMarkerAlt, FaTh, FaSearch, FaMapPin, FaSignOutAlt } from "react-icons/fa";
 import { CgMenuRight, CgShoppingCart, CgProfile } from "react-icons/cg";
 import { useCart } from "../contexts/CartContext";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { CATALOG } from "../utils/constants";
+import { auth } from "../firebase";
+import { signOut } from "firebase/auth";
 
 const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   const { getTotalItems } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const PANEL_WIDTH = 360;
+
+  // Check user auth state
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+      setIsMenuOpen(false);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   // Check if we are on the menu page
   const isMenuPage = location.pathname === '/menu';
@@ -108,11 +128,11 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
               </Link>
               <button
                 className="flex items-center gap-2 px-5 py-2.5 rounded-md font-bold text-sm shadow-sm transition-transform active:scale-95"
-                onClick={() => navigate('/login')}
+                onClick={() => user ? handleLogout() : navigate('/login')}
                 style={{ backgroundColor: '#FFC72C', color: '#000000' }}
               >
-                <FaUser className="w-4 h-4" />
-                <span>LOGIN</span>
+                {user ? <FaSignOutAlt className="w-4 h-4" /> : <FaUser className="w-4 h-4" />}
+                <span>{user ? 'LOGOUT' : 'LOGIN'}</span>
               </button>
             </div>
 
@@ -125,10 +145,10 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                 </span>
               </Link>
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => user ? handleLogout() : navigate('/login')}
                 className="text-[#E25C1D]"
               >
-                <CgProfile className="w-7 h-7" />
+                {user ? <FaSignOutAlt className="w-6 h-6" /> : <CgProfile className="w-7 h-7" />}
               </button>
             </div>
           </div>
@@ -160,17 +180,36 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                           <FaUser className="w-6 h-6" />
                         </div>
                         <div>
-                          <div className="text-sm text-gray-500">Login to explore</div>
-                          <div className="text-sm font-bold text-[#1E1E1E]">World of flavors</div>
+                          {user ? (
+                             <>
+                                <div className="text-sm text-gray-500">Welcome back</div>
+                                <div className="text-sm font-bold text-[#1E1E1E]">{user.phoneNumber}</div>
+                             </>
+                          ) : (
+                             <>
+                                <div className="text-sm text-gray-500">Login to explore</div>
+                                <div className="text-sm font-bold text-[#1E1E1E]">World of flavors</div>
+                             </>
+                          )}
                         </div>
                      </div>
-                     <button 
-                       onClick={() => { navigate('/login'); setIsMenuOpen(false); }}
-                       className="w-fit px-6 py-2 rounded border font-bold text-xs tracking-wider" 
-                       style={{ borderColor: '#000000', color: '#000000' }}
-                     >
-                        LOGIN
-                     </button>
+                     {user ? (
+                        <button 
+                            onClick={handleLogout}
+                            className="w-fit px-6 py-2 rounded border font-bold text-xs tracking-wider hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors" 
+                            style={{ borderColor: '#000000', color: '#000000' }}
+                        >
+                            LOGOUT
+                        </button>
+                     ) : (
+                        <button 
+                            onClick={() => { navigate('/login'); setIsMenuOpen(false); }}
+                            className="w-fit px-6 py-2 rounded border font-bold text-xs tracking-wider" 
+                            style={{ borderColor: '#000000', color: '#000000' }}
+                        >
+                            LOGIN
+                        </button>
+                     )}
                   </div>
   
                   <div className="flex-1 py-2 overflow-y-auto bg-white">
