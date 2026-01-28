@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { FaPhoneAlt, FaUser, FaCommentDots, FaArrowLeft, FaSpinner } from 'react-icons/fa';
-import { Link, useNavigate } from 'react-router-dom';
-import { auth } from '../firebase';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { auth, db } from '../firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState('initial'); // 'initial', 'phone', 'otp'
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
@@ -14,27 +16,30 @@ const LoginPage = () => {
   const [user, setUser] = useState(null);
   const [confirmationResult, setConfirmationResult] = useState(null);
 
+  // Check if we have a redirect destination
+  const from = location.state?.from?.pathname || '/';
+
   useEffect(() => {
     // Check if user is already logged in
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        navigate('/');
+        // If already logged in, redirect
+        navigate(from, { replace: true });
       }
     });
     return () => unsubscribe();
-  }, [navigate]);
+  }, [navigate, from]);
+
+  // ... (Recaptcha logic remains same)
 
   const onCaptchVerify = () => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
-          // onSignup();
+          // reCAPTCHA solved
         },
-        'expired-callback': () => {
-          // Response expired. Ask user to solve reCAPTCHA again.
-        }
+        'expired-callback': () => {}
       });
     }
   }
@@ -49,7 +54,7 @@ const LoginPage = () => {
     onCaptchVerify();
 
     const appVerifier = window.recaptchaVerifier;
-    const formatPh = "+92" + phoneNumber;
+    const formatPh = "+92" + phoneNumber.replace(/^0+/, ''); // Remove leading zeros if any
 
     signInWithPhoneNumber(auth, formatPh, appVerifier)
       .then((confirmationResult) => {
@@ -72,10 +77,27 @@ const LoginPage = () => {
   const onOTPVerify = () => {
     setLoading(true);
     window.confirmationResult.confirm(otp).then(async (res) => {
-      setUser(res.user);
+      const user = res.user;
+      setUser(user);
+
+      // Check if user exists in Firestore
+      const userRef = doc(db, "Customers", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        // Create new user document
+        await setDoc(userRef, {
+            phone: user.phoneNumber,
+            createdAt: serverTimestamp(),
+            orderHistory: [],
+            name: "",
+            email: ""
+        });
+      }
+
       setLoading(false);
       toast.success("Login Successful!");
-      navigate('/');
+      navigate(from, { replace: true });
     }).catch((err) => {
       console.log(err);
       setLoading(false);

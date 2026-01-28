@@ -1,8 +1,9 @@
 import React from "react";
 import { useCart } from "../contexts/CartContext";
 import { FaTrash, FaArrowLeft } from "react-icons/fa";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation as useRouterLocation } from "react-router-dom";
 import { useLocation } from "../hooks/useLocation";
+import { auth } from "../firebase";
 
 const COLORS = {
   primary: "#FFC72C",
@@ -21,12 +22,21 @@ const CartScreen = () => {
   } = useCart();
 
   const { location } = useLocation();
+  const routerLocation = useRouterLocation();
   const navigate = useNavigate();
 
   const isPakistan = location?.countryCode === "PK";
   const currencySymbol = isPakistan ? "Rs." : "£";
 
   const total = getTotalPrice();
+
+  const handleCheckout = () => {
+    if (auth.currentUser) {
+      navigate('/PaymentScreen');
+    } else {
+      navigate('/login', { state: { from: routerLocation } });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
@@ -166,12 +176,12 @@ const CartScreen = () => {
                     <span className="text-gray-500 font-medium">Total ({getTotalItems()} items)</span>
                     <span className="text-xl font-bold text-gray-900">{currencySymbol} {total}</span>
                 </div>
-                <Link
-                    to="/PaymentScreen"
+                <button
+                    onClick={handleCheckout}
                     className="w-full bg-[#FFC72C] text-black font-bold py-4 rounded-xl flex items-center justify-center hover:bg-[#ffcf4b] transition-colors shadow-sm text-lg"
                 >
                     Proceed to Checkout
-                </Link>
+                </button>
             </div>
         </div>
       )}

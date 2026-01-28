@@ -1,17 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaArrowLeft } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation as useRouterLocation } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { toast } from "react-toastify";
 import { useLocation } from "../hooks/useLocation";
+import { auth } from "../firebase";
 
 const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
   const navigate = useNavigate();
   const { location } = useLocation();
+  const routerLocation = useRouterLocation();
 
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Check auth and prefill phone
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+        if (!user) {
+            navigate('/login', { state: { from: routerLocation } });
+        } else {
+            setPhone(user.phoneNumber || "");
+        }
+    });
+    return () => unsubscribe();
+  }, [navigate, routerLocation]);
 
   const isPakistan = location?.countryCode === "PK";
   const currencySymbol = isPakistan ? "Rs." : "£";
