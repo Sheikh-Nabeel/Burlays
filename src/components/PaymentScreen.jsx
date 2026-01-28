@@ -66,6 +66,7 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
         totalAmount: total,
         paymentMethod: "COD",
         status: "Pending",
+        assignedRiderId: "", // Initially empty
         createdAt: serverTimestamp(),
         orderDate: new Date().toLocaleDateString('en-GB'),
         platform: "web"
