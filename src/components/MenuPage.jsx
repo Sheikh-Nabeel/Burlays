@@ -11,6 +11,10 @@ const MenuPage = () => {
   const navigate = useNavigate();
   const { addToCart, cartItems, getTotalPrice } = useCart();
   
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedVariants, setSelectedVariants] = useState({});
+  const [selectedAddons, setSelectedAddons] = useState({});
+
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +23,48 @@ const MenuPage = () => {
   const categoryRefs = useRef({});
 
   // Fetch categories and products from Firebase
+
+  // ... (existing code)
+
+  const openProductModal = (product) => {
+    setSelectedProduct(product);
+    setSelectedVariants({});
+    setSelectedAddons({});
+  };
+
+  const closeProductModal = () => {
+    setSelectedProduct(null);
+  };
+
+  const handleAddToCart = () => {
+    if (!selectedProduct) return;
+
+    // Start with base price
+    let finalPrice = Number(selectedProduct.price || 0);
+    
+    // If a variant is selected, use the variant's price instead of the base price
+    // (Assuming variants override base price. If they are additive, change logic to +=)
+    if (selectedVariants && selectedVariants.price) {
+        finalPrice = Number(selectedVariants.price);
+    }
+
+    // Add addon prices
+    Object.values(selectedAddons).forEach(addon => {
+        finalPrice += Number(addon.price || 0);
+    });
+
+    const cartItem = {
+        ...selectedProduct,
+        price_pk: finalPrice,
+        selectedVariants,
+        selectedAddons,
+        uniqueId: Date.now() // Unique ID for cart item to distinguish same product with different options
+    };
+
+    addToCart(cartItem);
+    closeProductModal();
+  };
+
   useEffect(() => {
     const fetchMenuData = async () => {
       const selectedBranch = JSON.parse(localStorage.getItem('selectedBranch'));
@@ -35,7 +81,8 @@ const MenuPage = () => {
         
         const categoriesData = await Promise.all(categoriesSnapshot.docs.map(async (categoryDoc) => {
           // 2. Get Products for each Category
-          const productsRef = collection(db, `branches/${selectedBranch.id}/categories/${categoryDoc.id}/Products`);
+          // The collection name in your screenshot is "products" (lowercase), not "Products" (uppercase)
+          const productsRef = collection(db, `branches/${selectedBranch.id}/categories/${categoryDoc.id}/products`);
           const productsSnapshot = await getDocs(productsRef);
           const productsData = productsSnapshot.docs.map(doc => ({
             id: doc.id,
@@ -146,6 +193,17 @@ const MenuPage = () => {
     }
   };
 
+  const getProductPrice = (product) => {
+      // Logic to show base price or range if variants exist
+      const validVariants = product.variants ? product.variants.filter(v => v.name) : [];
+      if (validVariants.length > 0) {
+          const prices = validVariants.map(v => Number(v.price));
+          const minPrice = Math.min(...prices);
+          return `Rs. ${minPrice}`;
+      }
+      return `Rs. ${Number(product.price || 0)}`;
+  };
+
   // Filter products based on search query
   const searchQuery = searchParams.get('search') || '';
   
@@ -249,14 +307,14 @@ const MenuPage = () => {
                         <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
                             <div className="flex flex-col">
                                 <span className="text-xs text-gray-500 font-medium">Starting Price</span>
-                                <span className="text-[#E25C1D] font-bold text-lg">Rs. {Number(product.price).toLocaleString()}</span>
+                                <span className="text-[#E25C1D] font-bold text-lg">{getProductPrice(product)}</span>
                             </div>
                             <button 
-                                onClick={() => addToCart({ ...product, price_pk: Number(product.price) })}
+                                onClick={() => openProductModal(product)}
                                 className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-sm font-bold transition-colors border border-gray-200"
                             >
                                 <FaPlus className="w-3 h-3 text-[#FFC72C]" />
-                                ADD TO CART
+                                ADD
                             </button>
                         </div>
                     </div>
@@ -311,6 +369,155 @@ const MenuPage = () => {
             </div>
         </div>
       </div>
+      {/* Product Options Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeProductModal}></div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden relative z-10 flex flex-col max-h-[90vh]"
+          >
+            {/* Header Image */}
+            <div className="relative h-48 bg-gray-100">
+                <img 
+                    src={selectedProduct.imagepath || "https://via.placeholder.com/150"} 
+                    alt={selectedProduct.name} 
+                    className="w-full h-full object-cover"
+                />
+                <button 
+                    onClick={closeProductModal}
+                    className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow-md hover:bg-white text-gray-800"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedProduct.name}</h2>
+                <p className="text-gray-500 text-sm mb-6">{selectedProduct.description}</p>
+
+                {/* Variants Section */}
+                {selectedProduct.variants && selectedProduct.variants.length > 0 && selectedProduct.variants.some(v => v.name) && (
+                    <div className="mb-6">
+                        <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
+                            Choose Variation 
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Required</span>
+                        </h3>
+                        <div className="space-y-3">
+                            {selectedProduct.variants.filter(v => v.name).map((variant, index) => (
+                                <label 
+                                    key={index}
+                                    className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                        selectedVariants.name === variant.name 
+                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
+                                            : 'border-gray-100 hover:border-gray-200'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                            selectedVariants.name === variant.name 
+                                                ? 'border-[#FFC72C]' 
+                                                : 'border-gray-300'
+                                        }`}>
+                                            {selectedVariants.name === variant.name && (
+                                                <div className="w-2.5 h-2.5 rounded-full bg-[#FFC72C]"></div>
+                                            )}
+                                        </div>
+                                        <span className="font-medium text-gray-700">{variant.name}</span>
+                                    </div>
+                                    <span className="font-bold text-gray-900">Rs. {variant.price}</span>
+                                    <input 
+                                        type="radio" 
+                                        name="variant" 
+                                        className="hidden"
+                                        checked={selectedVariants.name === variant.name}
+                                        onChange={() => setSelectedVariants(variant)}
+                                    />
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Addons Section */}
+                {selectedProduct.addons && selectedProduct.addons.length > 0 && selectedProduct.addons.some(a => a.name) && (
+                    <div className="mb-6">
+                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
+                            Add Ons 
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Optional</span>
+                        </h3>
+                        <div className="space-y-3">
+                            {selectedProduct.addons.filter(a => a.name).map((addon, index) => (
+                                <label 
+                                    key={index}
+                                    className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                        selectedAddons[index] 
+                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
+                                            : 'border-gray-100 hover:border-gray-200'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                            selectedAddons[index] 
+                                                ? 'border-[#FFC72C] bg-[#FFC72C]' 
+                                                : 'border-gray-300'
+                                        }`}>
+                                            {selectedAddons[index] && (
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-white">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                        <span className="font-medium text-gray-700">{addon.name}</span>
+                                    </div>
+                                    <span className="font-bold text-gray-900">+ Rs. {addon.price}</span>
+                                    <input 
+                                        type="checkbox" 
+                                        className="hidden"
+                                        checked={!!selectedAddons[index]}
+                                        onChange={(e) => {
+                                            const newAddons = { ...selectedAddons };
+                                            if (e.target.checked) {
+                                                newAddons[index] = addon;
+                                            } else {
+                                                delete newAddons[index];
+                                            }
+                                            setSelectedAddons(newAddons);
+                                        }}
+                                    />
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 border-t border-gray-100 bg-white">
+                <button 
+                    onClick={handleAddToCart}
+                    disabled={selectedProduct.variants && selectedProduct.variants.filter(v => v.name).length > 0 && !selectedVariants.name}
+                    className="w-full bg-[#FFC72C] hover:bg-[#ffcf4b] text-black font-bold py-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-between px-6"
+                >
+                    <span>Add to Order</span>
+                    <span>
+                        Rs. {(() => {
+                            let total = Number(selectedProduct.price || 0);
+                            // If variant selected, use that price instead of base (or add to it depending on your logic, usually variants replace base price)
+                            if (selectedVariants.price) total = Number(selectedVariants.price);
+                            
+                            Object.values(selectedAddons).forEach(a => total += Number(a.price));
+                            return total;
+                        })()}
+                    </span>
+                </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

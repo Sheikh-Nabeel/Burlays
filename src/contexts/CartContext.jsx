@@ -10,26 +10,31 @@ export const CartProvider = ({ children }) => {
   const isPakistan = location?.countryCode === "PK";
   const currencySymbol = isPakistan ? "Rs." : "£";
 
- const addToCart = (product) => {
-   setCartItems((prev) => {
-     const existing = prev.find(
-       (item) =>
-         item.id === product.id && item.selectedColor === product.selectedColor
-     );
-     if (existing) {
-       return prev.map((item) =>
-         item.id === product.id && item.selectedColor === product.selectedColor
-           ? { ...item, quantity: item.quantity + 1 }
-           : item
-       );
-     }
-     return [...prev, { ...product, quantity: 1 }];
-   });
- };
+  const addToCart = (product) => {
+    setCartItems((prev) => {
+      // Use uniqueId if available (for products with variants/addons), otherwise fallback to id
+      const productId = product.uniqueId || product.id;
+      
+      const existing = prev.find((item) => {
+          if (product.uniqueId) {
+              return item.uniqueId === product.uniqueId;
+          }
+          return item.id === product.id;
+      });
 
+      if (existing) {
+        return prev.map((item) => {
+            const isMatch = product.uniqueId ? item.uniqueId === product.uniqueId : item.id === product.id;
+            return isMatch ? { ...item, quantity: item.quantity + 1 } : item;
+        });
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
 
   const removeFromCart = (productId) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== productId));
+    // Check both id and uniqueId
+    setCartItems((prev) => prev.filter((item) => (item.uniqueId || item.id) !== productId));
   };
 
   const updateQuantity = (productId, quantity) => {
@@ -38,15 +43,20 @@ export const CartProvider = ({ children }) => {
       return;
     }
     setCartItems((prev) =>
-      prev.map((item) => (item.id === productId ? { ...item, quantity } : item))
+      prev.map((item) => {
+          const isMatch = (item.uniqueId || item.id) === productId;
+          return isMatch ? { ...item, quantity } : item;
+      })
     );
   };
 
   // ✅ Always calculate using correct currency price
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => {
-      const price = isPakistan ? item.price_pk : item.price_uk;
-      return total + (price || 0) * item.quantity;
+      // Use the calculated price (price_pk) that we set in MenuPage.jsx
+      // If price_pk is not available, fallback to other price fields
+      const price = item.price_pk || item.price || 0;
+      return total + Number(price) * item.quantity;
     }, 0);
   };
 

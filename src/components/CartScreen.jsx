@@ -26,10 +26,7 @@ const CartScreen = () => {
   const isPakistan = location?.countryCode === "PK";
   const currencySymbol = isPakistan ? "Rs." : "£";
 
-  const total = cartItems.reduce((sum, item) => {
-    const price = isPakistan ? item.price_pk : item.price_uk;
-    return sum + price * item.quantity;
-  }, 0);
+  const total = getTotalPrice();
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
@@ -76,7 +73,7 @@ const CartScreen = () => {
         ) : (
           <div className="space-y-4">
             {cartItems.map((item, index) => {
-              const price = isPakistan ? item.price_pk : item.price_uk;
+              const price = item.price_pk || item.price || 0;
               return (
                 <div
                   key={index}
@@ -85,7 +82,7 @@ const CartScreen = () => {
                   {/* Product Image */}
                   <div className="w-24 h-24 flex-shrink-0 bg-gray-50 rounded-lg overflow-hidden">
                     <img
-                      src={item.productPic || "https://via.placeholder.com/80"}
+                      src={item.imagepath || item.productPic || "https://via.placeholder.com/80"}
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
@@ -99,16 +96,32 @@ const CartScreen = () => {
                                 {item.name}
                             </h3>
                             <p className="text-[#E25C1D] font-bold text-sm mt-1">
-                                {currencySymbol} {price}
+                                {currencySymbol} {Number(price).toLocaleString()}
                             </p>
-                            {item.selectedColor && (
+                            
+                            {/* Show Variants */}
+                            {item.selectedVariants && item.selectedVariants.name && (
                                 <p className="text-xs text-gray-500 mt-1">
-                                    Option: {item.selectedColor}
+                                    Variant: {item.selectedVariants.name}
                                 </p>
+                            )}
+
+                            {/* Show Addons */}
+                            {item.selectedAddons && Object.values(item.selectedAddons).length > 0 && (
+                                <div className="mt-1">
+                                    <p className="text-xs text-gray-500 font-medium">Add-ons:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {Object.values(item.selectedAddons).map((addon, idx) => (
+                                            <span key={idx} className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+                                                {addon.name} (+{currencySymbol}{addon.price})
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </div>
                         <button
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => removeFromCart(item.uniqueId || item.id)}
                             className="text-gray-400 hover:text-red-500 transition-colors p-1"
                         >
                             <FaTrash size={14} />
@@ -119,7 +132,7 @@ const CartScreen = () => {
                     <div className="flex justify-between items-end mt-2">
                         <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1 border border-gray-200">
                             <button
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                onClick={() => updateQuantity(item.uniqueId || item.id, item.quantity - 1)}
                                 className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-black font-bold disabled:opacity-50"
                                 disabled={item.quantity <= 1}
                             >
@@ -127,14 +140,14 @@ const CartScreen = () => {
                             </button>
                             <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
                             <button
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                onClick={() => updateQuantity(item.uniqueId || item.id, item.quantity + 1)}
                                 className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-black font-bold"
                             >
                                 +
                             </button>
                         </div>
                         <div className="font-bold text-gray-900">
-                            {currencySymbol} {price * item.quantity}
+                            {currencySymbol} {(Number(price) * item.quantity).toLocaleString()}
                         </div>
                     </div>
                   </div>
