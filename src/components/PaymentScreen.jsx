@@ -4,7 +4,8 @@ import { useNavigate, useLocation as useRouterLocation } from "react-router-dom"
 import { useCart } from "../contexts/CartContext";
 import { toast } from "react-toastify";
 import { useLocation } from "../hooks/useLocation";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, arrayUnion } from "firebase/firestore";
 
 const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
   const navigate = useNavigate();
@@ -39,10 +40,51 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
 
     setLoading(true);
     try {
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
+
+      // Get selected branch from localStorage
+      const selectedBranch = JSON.parse(localStorage.getItem('selectedBranch'));
+      
+      const orderData = {
+        userId: user.uid,
+        customerName: user.displayName || "Customer",
+        customerPhone: phone,
+        deliveryAddress: address,
+        branchId: selectedBranch ? selectedBranch.id : "unknown",
+        branchName: selectedBranch ? selectedBranch.name : "Unknown Branch",
+        items: cartItems.map(item => ({
+            productId: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price_pk || item.price,
+            totalPrice: (item.price_pk || item.price) * item.quantity,
+            variant: item.selectedVariants || null,
+            addons: item.selectedAddons || null,
+            image: item.imagepath || item.productPic || ""
+        })),
+        totalAmount: total,
+        paymentMethod: "COD",
+        status: "Pending",
+        createdAt: serverTimestamp(),
+        orderDate: new Date().toLocaleDateString('en-GB'),
+        platform: "web"
+      };
+
+      // 1. Create Order in 'orders' collection
+      const docRef = await addDoc(collection(db, "orders"), orderData);
+
+      // 2. Update Customer's orderHistory
+      const userRef = doc(db, "Customers", user.uid);
+      await updateDoc(userRef, {
+        orderHistory: arrayUnion(docRef.id)
+      });
+
       clearCart();
       toast.success("✅ Order placed successfully!");
       navigate("/");
     } catch (err) {
+      console.error("Order Error: ", err);
       const errorMessage = err.message || "Something went wrong, please try again.";
       toast.error(`❌ ${errorMessage}`);
     } finally {
