@@ -55,10 +55,20 @@ const BranchSelection = ({ onSelectBranch }) => {
           <button
             key={branch.id}
             onClick={() => handleSelect(branch)}
-            className="flex flex-col items-center p-6 rounded-2xl border-2 border-gray-100 hover:border-[#FFC72C] hover:bg-[#FFF9E5] transition-all group text-left w-full bg-gray-50"
+            className="flex flex-col items-center p-6 rounded-2xl border-2 border-gray-100 hover:border-[#FFC72C] hover:bg-[#FFF9E5] transition-all group text-left w-full bg-gray-50 overflow-hidden"
           >
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-transform">
-              <FaMapMarkerAlt className="text-[#E25C1D] text-2xl" />
+            <div className="w-full h-32 bg-gray-200 rounded-xl mb-4 overflow-hidden relative">
+               {branch.imageUrl ? (
+                 <img 
+                   src={branch.imageUrl} 
+                   alt={branch.name} 
+                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                 />
+               ) : (
+                 <div className="w-full h-full flex items-center justify-center">
+                    <FaMapMarkerAlt className="text-[#E25C1D] text-3xl" />
+                 </div>
+               )}
             </div>
             <h3 className="font-bold text-lg text-gray-900 mb-1">{branch.name}</h3>
             <p className="text-sm text-gray-500 text-center">{branch.location}</p>

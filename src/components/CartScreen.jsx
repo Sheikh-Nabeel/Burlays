@@ -92,7 +92,7 @@ const CartScreen = () => {
                   {/* Product Image */}
                   <div className="w-24 h-24 flex-shrink-0 bg-gray-50 rounded-lg overflow-hidden">
                     <img
-                      src={item.imagepath || item.productPic || "https://via.placeholder.com/80"}
+                      src={item.imageUrl || item.imagepath || "https://via.placeholder.com/80"}
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
@@ -123,7 +123,7 @@ const CartScreen = () => {
                                     <div className="flex flex-wrap gap-1">
                                         {Object.values(item.selectedAddons).map((addon, idx) => (
                                             <span key={idx} className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
-                                                {addon.name} (+{currencySymbol}{addon.price})
+                                                {addon.quantity > 1 ? `${addon.quantity}x ` : ''}{addon.name} (+{currencySymbol}{Number(addon.price) * (addon.quantity || 1)})
                                             </span>
                                         ))}
                                     </div>

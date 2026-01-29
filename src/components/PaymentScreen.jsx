@@ -60,7 +60,11 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
             price: item.price_pk || item.price,
             totalPrice: (item.price_pk || item.price) * item.quantity,
             variant: item.selectedVariants || null,
-            addons: item.selectedAddons || null,
+            addons: item.selectedAddons ? Object.values(item.selectedAddons).map(addon => ({
+                name: addon.name,
+                price: addon.price,
+                quantity: addon.quantity || 1
+            })) : null,
             image: item.imagepath || item.productPic || ""
         })),
         totalAmount: total,

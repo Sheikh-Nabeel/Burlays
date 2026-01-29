@@ -43,14 +43,13 @@ const MenuPage = () => {
     let finalPrice = Number(selectedProduct.price || 0);
     
     // If a variant is selected, use the variant's price instead of the base price
-    // (Assuming variants override base price. If they are additive, change logic to +=)
     if (selectedVariants && selectedVariants.price) {
         finalPrice = Number(selectedVariants.price);
     }
 
-    // Add addon prices
+    // Add addon prices based on quantity
     Object.values(selectedAddons).forEach(addon => {
-        finalPrice += Number(addon.price || 0);
+        finalPrice += Number(addon.price || 0) * (addon.quantity || 1);
     });
 
     const cartItem = {
@@ -289,7 +288,7 @@ const MenuPage = () => {
                   <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow h-full">
                     <div className="relative w-full h-48 mb-4">
                         <img 
-                            src={product.imagepath || "https://via.placeholder.com/150"} 
+                            src={product.imageUrl || product.imagepath || "https://via.placeholder.com/150"} 
                             alt={product.name} 
                             className="w-full h-full object-cover rounded-lg"
                         />
@@ -381,7 +380,7 @@ const MenuPage = () => {
             {/* Header Image */}
             <div className="relative h-48 bg-gray-100">
                 <img 
-                    src={selectedProduct.imagepath || "https://via.placeholder.com/150"} 
+                    src={selectedProduct.imageUrl || selectedProduct.imagepath || "https://via.placeholder.com/150"} 
                     alt={selectedProduct.name} 
                     className="w-full h-full object-cover"
                 />
@@ -417,6 +416,31 @@ const MenuPage = () => {
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
+                                        <div className={`w-12 h-12 rounded-lg border flex-shrink-0 overflow-hidden ${
+                                            selectedVariants.name === variant.name ? 'border-[#FFC72C]' : 'border-gray-200'
+                                        }`}>
+                                            <img 
+                                                src={variant.imageUrl || selectedProduct.imageUrl || selectedProduct.imagepath || "https://via.placeholder.com/150"} 
+                                                alt={variant.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-gray-700">{variant.name}</span>
+                                            {selectedVariants.name === variant.name && (
+                                                <span className="text-xs text-[#E25C1D] font-bold">Selected</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-bold text-gray-900">Rs. {variant.price}</span>
+                                        <input 
+                                            type="radio" 
+                                            name="variant" 
+                                            className="hidden"
+                                            checked={selectedVariants.name === variant.name}
+                                            onChange={() => setSelectedVariants(variant)}
+                                        />
                                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                                             selectedVariants.name === variant.name 
                                                 ? 'border-[#FFC72C]' 
@@ -426,16 +450,7 @@ const MenuPage = () => {
                                                 <div className="w-2.5 h-2.5 rounded-full bg-[#FFC72C]"></div>
                                             )}
                                         </div>
-                                        <span className="font-medium text-gray-700">{variant.name}</span>
                                     </div>
-                                    <span className="font-bold text-gray-900">Rs. {variant.price}</span>
-                                    <input 
-                                        type="radio" 
-                                        name="variant" 
-                                        className="hidden"
-                                        checked={selectedVariants.name === variant.name}
-                                        onChange={() => setSelectedVariants(variant)}
-                                    />
                                 </label>
                             ))}
                         </div>
@@ -451,44 +466,90 @@ const MenuPage = () => {
                         </h3>
                         <div className="space-y-3">
                             {selectedProduct.addons.filter(a => a.name).map((addon, index) => (
-                                <label 
-                                    key={index}
-                                    className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                                        selectedAddons[index] 
-                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
-                                            : 'border-gray-100 hover:border-gray-200'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                            selectedAddons[index] 
-                                                ? 'border-[#FFC72C] bg-[#FFC72C]' 
-                                                : 'border-gray-300'
-                                        }`}>
-                                            {selectedAddons[index] && (
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-white">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                            )}
+                                <div key={index} className="flex flex-col gap-2 p-4 rounded-xl border border-gray-100">
+                                    <label 
+                                        className={`flex items-center justify-between cursor-pointer transition-all ${
+                                            selectedAddons[index] ? 'opacity-100' : 'opacity-80'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-12 h-12 rounded-lg border flex-shrink-0 overflow-hidden ${
+                                                selectedAddons[index] ? 'border-[#FFC72C]' : 'border-gray-200'
+                                            }`}>
+                                                <img 
+                                                    src={addon.imageUrl || "https://via.placeholder.com/150"} 
+                                                    alt={addon.name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                            <span className="font-medium text-gray-700">{addon.name}</span>
                                         </div>
-                                        <span className="font-medium text-gray-700">{addon.name}</span>
-                                    </div>
-                                    <span className="font-bold text-gray-900">+ Rs. {addon.price}</span>
-                                    <input 
-                                        type="checkbox" 
-                                        className="hidden"
-                                        checked={!!selectedAddons[index]}
-                                        onChange={(e) => {
-                                            const newAddons = { ...selectedAddons };
-                                            if (e.target.checked) {
-                                                newAddons[index] = addon;
-                                            } else {
-                                                delete newAddons[index];
-                                            }
-                                            setSelectedAddons(newAddons);
-                                        }}
-                                    />
-                                </label>
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-bold text-gray-900">+ Rs. {addon.price}</span>
+                                            <input 
+                                                type="checkbox" 
+                                                className="hidden"
+                                                checked={!!selectedAddons[index]}
+                                                onChange={(e) => {
+                                                    const newAddons = { ...selectedAddons };
+                                                    if (e.target.checked) {
+                                                        newAddons[index] = { ...addon, quantity: 1 };
+                                                    } else {
+                                                        delete newAddons[index];
+                                                    }
+                                                    setSelectedAddons(newAddons);
+                                                }}
+                                            />
+                                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                                selectedAddons[index] 
+                                                    ? 'border-[#FFC72C] bg-[#FFC72C]' 
+                                                    : 'border-gray-300'
+                                            }`}>
+                                                {selectedAddons[index] && (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-white">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </label>
+                                    
+                                    {/* Quantity Controls for Addon */}
+                                    {selectedAddons[index] && (
+                                        <div className="flex justify-end items-center mt-2 border-t border-gray-50 pt-2">
+                                            <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const newAddons = { ...selectedAddons };
+                                                        if (newAddons[index].quantity > 1) {
+                                                            newAddons[index].quantity -= 1;
+                                                            setSelectedAddons(newAddons);
+                                                        } else {
+                                                            delete newAddons[index];
+                                                            setSelectedAddons(newAddons);
+                                                        }
+                                                    }}
+                                                    className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black font-bold"
+                                                >
+                                                    −
+                                                </button>
+                                                <span className="text-xs font-bold w-4 text-center">{selectedAddons[index].quantity}</span>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const newAddons = { ...selectedAddons };
+                                                        newAddons[index].quantity = (newAddons[index].quantity || 1) + 1;
+                                                        setSelectedAddons(newAddons);
+                                                    }}
+                                                    className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black font-bold"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -509,7 +570,7 @@ const MenuPage = () => {
                             // If variant selected, use that price instead of base (or add to it depending on your logic, usually variants replace base price)
                             if (selectedVariants.price) total = Number(selectedVariants.price);
                             
-                            Object.values(selectedAddons).forEach(a => total += Number(a.price));
+                            Object.values(selectedAddons).forEach(a => total += Number(a.price) * (a.quantity || 1));
                             return total;
                         })()}
                     </span>
