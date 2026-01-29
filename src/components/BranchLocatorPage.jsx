@@ -178,7 +178,7 @@ const BranchLocatorPage = () => {
             </div>
 
             {/* Right Side - Map */}
-            <div className="w-full lg:w-2/3 h-[500px] lg:h-auto min-h-[600px] bg-[#F3F4F6] rounded-xl overflow-hidden relative border border-gray-200">
+            {/* <div className="w-full lg:w-2/3 h-[500px] lg:h-auto min-h-[600px] bg-[#F3F4F6] rounded-xl overflow-hidden relative border border-gray-200">
                 {isLoaded ? (
                     <GoogleMap
                         mapContainerStyle={mapContainerStyle}
@@ -234,7 +234,7 @@ const BranchLocatorPage = () => {
                         <FaSpinner className="animate-spin text-3xl text-gray-400" />
                     </div>
                 )}
-            </div>
+            </div> */}
         </div>
       </div>
     </div>
