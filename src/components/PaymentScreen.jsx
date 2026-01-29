@@ -31,7 +31,14 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
 
   const isPakistan = location?.countryCode === "PK";
   const currencySymbol = isPakistan ? "Rs." : "£";
-  const total = getTotalPrice();
+  
+  // Get selected branch from localStorage to access GST
+  const selectedBranch = JSON.parse(localStorage.getItem('selectedBranch') || '{}');
+  const gstPercentage = Number(selectedBranch.gst || 0);
+  
+  const subtotal = getTotalPrice();
+  const gstAmount = (subtotal * gstPercentage) / 100;
+  const total = subtotal + gstAmount;
 
   const handlePlaceOrder = async () => {
     if (!address || !phone || cartItems.length === 0) {
@@ -44,9 +51,6 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
       const user = auth.currentUser;
       if (!user) throw new Error("User not authenticated");
 
-      // Get selected branch from localStorage
-      const selectedBranch = JSON.parse(localStorage.getItem('selectedBranch'));
-      
       const orderData = {
         userId: user.uid,
         customerName: user.displayName || "Customer",
@@ -68,6 +72,9 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
             })) : null,
             image: item.imagepath || item.productPic || ""
         })),
+        subtotal: subtotal,
+        gstPercentage: gstPercentage,
+        gstAmount: gstAmount,
         totalAmount: total,
         paymentMethod: "COD",
         status: "Pending",
@@ -121,11 +128,11 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
           <div className="space-y-3 text-sm sm:text-base">
             <div className="flex justify-between text-gray-600">
               <span>Subtotal</span>
-              <span>{currencySymbol} {total}</span>
+              <span>{currencySymbol} {Number(subtotal).toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-gray-600">
-              <span>Tax & Fees</span>
-              <span>0.0</span>
+              <span>GST ({gstPercentage}%)</span>
+              <span>{currencySymbol} {Number(gstAmount).toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-gray-600">
               <span>Delivery</span>
@@ -134,7 +141,7 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
             <hr className="border-gray-100 my-2" />
             <div className="flex justify-between font-bold text-lg text-gray-900">
               <span>Total</span>
-              <span>{currencySymbol} {total}</span>
+              <span>{currencySymbol} {Number(total).toLocaleString()}</span>
             </div>
             <p className="text-xs text-gray-400 mt-2">
               Estimated delivery: 15 - 30 mins
@@ -184,7 +191,7 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
             <div className="flex flex-col">
                 <span className="text-sm text-gray-500">Total Amount</span>
                 <span className="text-xl font-bold text-gray-900">
-                    {currencySymbol} {total}
+                    {currencySymbol} {Number(total).toLocaleString()}
                 </span>
             </div>
             <button

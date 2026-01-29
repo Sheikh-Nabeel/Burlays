@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useCart } from "../contexts/CartContext";
 import { FaTrash, FaArrowLeft } from "react-icons/fa";
 import { Link, useNavigate, useLocation as useRouterLocation } from "react-router-dom";
 import { useLocation } from "../hooks/useLocation";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 const COLORS = {
   primary: "#FFC72C",
@@ -24,11 +25,40 @@ const CartScreen = () => {
   const { location } = useLocation();
   const routerLocation = useRouterLocation();
   const navigate = useNavigate();
+  const [gstPercentage, setGstPercentage] = useState(0);
 
   const isPakistan = location?.countryCode === "PK";
   const currencySymbol = isPakistan ? "Rs." : "£";
 
   const total = getTotalPrice();
+
+  // Fetch latest branch GST settings
+  useEffect(() => {
+    const fetchBranchDetails = async () => {
+        const storedBranch = JSON.parse(localStorage.getItem('selectedBranch') || '{}');
+        if (storedBranch.id) {
+            try {
+                const branchRef = doc(db, 'branches', storedBranch.id);
+                const branchSnap = await getDoc(branchRef);
+                if (branchSnap.exists()) {
+                    const branchData = branchSnap.data();
+                    setGstPercentage(Number(branchData.gst || 0));
+                    
+                    // Update local storage to keep it fresh
+                    localStorage.setItem('selectedBranch', JSON.stringify({ ...storedBranch, ...branchData }));
+                }
+            } catch (error) {
+                console.error("Error fetching branch GST:", error);
+                // Fallback to stored value
+                setGstPercentage(Number(storedBranch.gst || 0));
+            }
+        }
+    };
+    fetchBranchDetails();
+  }, []);
+  
+  const gstAmount = (total * gstPercentage) / 100;
+  const finalTotal = total + gstAmount;
 
   const handleCheckout = () => {
     if (auth.currentUser) {
@@ -129,6 +159,13 @@ const CartScreen = () => {
                                     </div>
                                 </div>
                             )}
+                            
+                            {/* Show GST Note if applicable */}
+                            {gstPercentage > 0 && (
+                                <p className="text-[10px] text-gray-400 mt-1">
+                                    * Exclusive of {gstPercentage}% GST
+                                </p>
+                            )}
                         </div>
                         <button
                             onClick={() => removeFromCart(item.uniqueId || item.id)}
@@ -156,8 +193,15 @@ const CartScreen = () => {
                                 +
                             </button>
                         </div>
-                        <div className="font-bold text-gray-900">
-                            {currencySymbol} {(Number(price) * item.quantity).toLocaleString()}
+                        <div className="flex flex-col items-end">
+                            <span className="font-bold text-gray-900">
+                                {currencySymbol} {(Number(price) * item.quantity).toLocaleString()}
+                            </span>
+                            {gstPercentage > 0 && (
+                                <span className="text-[10px] text-gray-400">
+                                    + {currencySymbol} {((Number(price) * item.quantity * gstPercentage) / 100).toLocaleString()} GST
+                                </span>
+                            )}
                         </div>
                     </div>
                   </div>
@@ -172,9 +216,21 @@ const CartScreen = () => {
       {cartItems.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <div className="max-w-3xl mx-auto">
-                <div className="flex justify-between items-center mb-4">
-                    <span className="text-gray-500 font-medium">Total ({getTotalItems()} items)</span>
-                    <span className="text-xl font-bold text-gray-900">{currencySymbol} {total}</span>
+                <div className="flex flex-col gap-1 mb-4">
+                    <div className="flex justify-between items-center text-gray-600 text-sm">
+                        <span>Subtotal ({getTotalItems()} items)</span>
+                        <span>{currencySymbol} {Number(total).toLocaleString()}</span>
+                    </div>
+                    {gstPercentage > 0 && (
+                        <div className="flex justify-between items-center text-gray-600 text-sm">
+                            <span>GST ({gstPercentage}%)</span>
+                            <span>{currencySymbol} {Number(gstAmount).toLocaleString()}</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
+                        <span className="text-gray-900 font-bold text-lg">Total</span>
+                        <span className="text-xl font-bold text-gray-900">{currencySymbol} {Number(finalTotal).toLocaleString()}</span>
+                    </div>
                 </div>
                 <button
                     onClick={handleCheckout}
