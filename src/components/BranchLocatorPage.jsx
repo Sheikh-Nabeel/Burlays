@@ -1,8 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+
+const libraries = ['places'];
+
+const mapContainerStyle = {
+  width: '100%',
+  height: '100%',
+  minHeight: '600px',
+  borderRadius: '0.75rem',
+};
+
+const defaultCenter = {
+  lat: 33.6844, // Default to Islamabad
+  lng: 73.0479,
+};
+
+const options = {
+  disableDefaultUI: true,
+  zoomControl: true,
+};
 
 const BranchLocatorPage = () => {
   const navigate = useNavigate();
@@ -10,6 +30,21 @@ const BranchLocatorPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [map, setMap] = useState(null);
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: "AIzaSyA17q-V4iN3cNO4EnhaYzc_bnRF-EsE3FM",
+    libraries,
+  });
+
+  const onMapLoad = useCallback((map) => {
+    setMap(map);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -144,48 +179,61 @@ const BranchLocatorPage = () => {
 
             {/* Right Side - Map */}
             <div className="w-full lg:w-2/3 h-[500px] lg:h-auto min-h-[600px] bg-[#F3F4F6] rounded-xl overflow-hidden relative border border-gray-200">
-                {/* Simulated Map Background */}
-                <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=33.5156,73.8560&zoom=10&size=800x600&maptype=roadmap&style=feature:poi|visibility:off&key=YOUR_API_KEY_HERE')] bg-cover bg-center opacity-50 grayscale-[20%]"></div>
-                
-                {/* Fallback Map Placeholder if image fails or for visual representation */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                     <img 
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Google_Maps_Logo_2020.svg/1024px-Google_Maps_Logo_2020.svg.png" 
-                        alt="Map" 
-                        className="w-24 opacity-20"
-                     />
-                </div>
-
-                {/* Simulated Map Markers */}
-                {filteredBranches.map((branch, index) => (
-                    <div 
-                        key={branch.id}
-                        className="absolute transform -translate-x-1/2 -translate-y-full cursor-pointer group"
-                        style={{ 
-                            top: `${30 + (index * 15)}%`, 
-                            left: `${40 + (index * 10)}%` 
-                        }}
+                {isLoaded ? (
+                    <GoogleMap
+                        mapContainerStyle={mapContainerStyle}
+                        zoom={11}
+                        center={defaultCenter}
+                        options={options}
+                        onLoad={onMapLoad}
+                        onUnmount={onUnmount}
                     >
-                        <div className="w-10 h-10 bg-[#FFC72C] rounded-full flex items-center justify-center shadow-lg border-2 border-white transform transition-transform group-hover:scale-110">
-                            <FaMapMarkerAlt className="text-black w-5 h-5" />
-                        </div>
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white p-2 rounded shadow-lg text-xs hidden group-hover:block z-10 text-center">
-                            <p className="font-bold">{branch.name}</p>
-                        </div>
-                    </div>
-                ))}
+                        {filteredBranches.map((branch) => {
+                             // Ensure lat/long exist and are numbers
+                             const lat = parseFloat(branch.lat);
+                             const lng = parseFloat(branch.long);
+                             
+                             if (isNaN(lat) || isNaN(lng)) return null;
 
-                {/* Map Controls */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    <button className="w-8 h-8 bg-white rounded shadow flex items-center justify-center hover:bg-gray-50 font-bold text-gray-600">+</button>
-                    <button className="w-8 h-8 bg-white rounded shadow flex items-center justify-center hover:bg-gray-50 font-bold text-gray-600">−</button>
-                </div>
-                
-                {/* Bottom Right Floating Button */}
-                <button className="absolute bottom-6 right-6 bg-[#E25C1D] text-white font-bold px-6 py-2.5 rounded-lg shadow-lg hover:bg-[#c94e16] transition-colors text-sm uppercase">
-                    Order Now
-                </button>
+                             return (
+                                <Marker
+                                    key={branch.id}
+                                    position={{ lat, lng }}
+                                    onClick={() => setSelectedMarker(branch)}
+                                    icon={{
+                                        url: "https://maps.google.com/mapfiles/ms/icons/yellow-dot.png", // Yellow marker to match theme
+                                        scaledSize: new window.google.maps.Size(40, 40)
+                                    }}
+                                />
+                             );
+                        })}
+
+                        {selectedMarker && (
+                            <InfoWindow
+                                position={{ 
+                                    lat: parseFloat(selectedMarker.lat), 
+                                    lng: parseFloat(selectedMarker.long) 
+                                }}
+                                onCloseClick={() => setSelectedMarker(null)}
+                            >
+                                <div className="p-2 min-w-[200px]">
+                                    <h3 className="font-bold text-gray-900 mb-1">{selectedMarker.name}</h3>
+                                    <p className="text-xs text-gray-500 mb-2">{selectedMarker.location}</p>
+                                    <button 
+                                        onClick={() => navigate(`/branches/${selectedMarker.id}`)}
+                                        className="w-full bg-[#FFC72C] text-black text-xs font-bold py-2 rounded hover:bg-[#ffcf4b] transition-colors"
+                                    >
+                                        View Menu
+                                    </button>
+                                </div>
+                            </InfoWindow>
+                        )}
+                    </GoogleMap>
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <FaSpinner className="animate-spin text-3xl text-gray-400" />
+                    </div>
+                )}
             </div>
         </div>
       </div>

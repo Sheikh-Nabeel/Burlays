@@ -22,7 +22,7 @@ const options = {
 
 const LocationPicker = ({ onLocationSelect, initialAddress }) => {
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyBVf0qgLid5HrJX5GCwCR_uuTFJO28pPmU", // Replace with your actual key
+    googleMapsApiKey: "AIzaSyA17q-V4iN3cNO4EnhaYzc_bnRF-EsE3FM", // Replace with your actual key
     libraries,
   });
 
