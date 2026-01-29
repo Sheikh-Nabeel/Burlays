@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { useLocation } from "../hooks/useLocation";
 import { auth, db } from "../firebase";
 import { collection, addDoc, serverTimestamp, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import LocationPicker from "./LocationPicker";
 
 const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
   const navigate = useNavigate();
@@ -144,13 +145,20 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
         {/* Delivery Details Form */}
         <div className="space-y-4">
           <h2 className="font-bold text-lg px-1">Delivery Details</h2>
+          
+          <LocationPicker 
+            onLocationSelect={(addr) => setAddress(addr)} 
+            initialAddress={address}
+          />
+          
           <textarea
-            placeholder="Delivery Address"
+            placeholder="Detailed Address (House No, Street, etc.)"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="w-full bg-gray-50 text-gray-900 p-4 rounded-xl border border-gray-200 focus:border-[#FFC72C] focus:ring-1 focus:ring-[#FFC72C] outline-none transition resize-none"
-            rows="3"
+            className="w-full bg-gray-50 text-gray-900 p-4 rounded-xl border border-gray-200 focus:border-[#FFC72C] focus:ring-1 focus:ring-[#FFC72C] outline-none transition resize-none mt-2"
+            rows="2"
           />
+
           <input
             type="tel"
             placeholder="Phone Number"
