@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaMapMarkerAlt, FaMotorcycle, FaUtensils, FaShoppingBag, FaSpinner } from 'react-icons/fa';
 import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collectionGroup, getDocs } from 'firebase/firestore';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 
 const libraries = ['places'];
@@ -42,14 +42,37 @@ const BranchDetailsPage = () => {
   useEffect(() => {
     const fetchBranch = async () => {
       try {
+        let foundBranch = null;
+
+        // 1. Try fetching from global 'branches' collection (Legacy/Direct)
         const docRef = doc(db, 'branches', branchId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setBranch({ id: docSnap.id, ...docSnap.data() });
+          foundBranch = { id: docSnap.id, ...docSnap.data() };
         } else {
-          setBranch(null);
+          // 2. If not found, search in nested 'cities/{cityId}/branches' using collectionGroup
+          // This is necessary because we don't have cityId in the URL
+          const branchesQuery = collectionGroup(db, 'branches');
+          const querySnapshot = await getDocs(branchesQuery);
+          
+          for (const doc of querySnapshot.docs) {
+            if (doc.id === branchId) {
+                // Extract cityId from path: cities/CITY_ID/branches/BRANCH_ID
+                const pathSegments = doc.ref.path.split('/');
+                const cityId = pathSegments.length >= 2 ? pathSegments[1] : null;
+                
+                foundBranch = { 
+                    id: doc.id, 
+                    cityId: cityId,
+                    ...doc.data() 
+                };
+                break;
+            }
+          }
         }
+
+        setBranch(foundBranch);
       } catch (error) {
         console.error("Error fetching branch details:", error);
       } finally {
@@ -100,7 +123,7 @@ const BranchDetailsPage = () => {
   }
 
   const lat = parseFloat(branch.lat);
-  const lng = parseFloat(branch.long);
+  const lng = parseFloat(branch.lng); // Changed from branch.long to branch.lng to match Firestore schema
   const mapUrl = (lat && lng) 
     ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}` 
     : branch.mapsUrl || "#";
@@ -151,7 +174,7 @@ const BranchDetailsPage = () => {
                             rel="noopener noreferrer"
                             className="inline-block bg-[#FFC72C] text-black font-bold text-sm px-8 py-3 rounded-lg hover:bg-[#ffcf4b] transition-colors shadow-sm mb-8"
                         >
-                            GET DIRECTION
+                            GET DIRECTIONS
                         </a>
 
                         <hr className="border-gray-100 mb-8" />

@@ -58,30 +58,35 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
         deliveryAddress: address,
         branchId: selectedBranch ? selectedBranch.id : "unknown",
         branchName: selectedBranch ? selectedBranch.name : "Unknown Branch",
-        items: cartItems.map(item => ({
-            productId: item.id,
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price_pk || item.price,
-            totalPrice: (item.price_pk || item.price) * item.quantity,
-            // Include full variants/addons data structure
-            selectedVariants: item.selectedVariants || {},
-            selectedAddons: item.selectedAddons || {}, 
-            // Legacy mapping for backward compatibility if needed, but above fields are more complete
-            variant: item.selectedVariants ? {
-                id: item.selectedVariants.id,
-                name: item.selectedVariants.name,
-                price: item.selectedVariants.price
-            } : null,
-            addons: item.selectedAddons ? Object.values(item.selectedAddons).map(addon => ({
-                id: addon.id,
-                name: addon.name,
-                price: addon.price,
-                quantity: addon.quantity || 1,
-                type: addon.type || 'Addon' // Distinguish between Flavor, Beverage, regular Addon
-            })) : [],
-            image: item.imagepath || item.imageUrl || item.productPic || ""
-        })),
+        items: cartItems.map(item => {
+            // Process Variants: Convert single object to array if it exists and has data
+            const variants = item.selectedVariants && (item.selectedVariants.id || item.selectedVariants.name) 
+                ? [item.selectedVariants] 
+                : [];
+            
+            // Process Addons: Split into categories based on type
+            const allSelectedItems = item.selectedAddons ? Object.values(item.selectedAddons) : [];
+            
+            const addons = allSelectedItems.filter(a => a.type === 'Addon');
+            const flavors = allSelectedItems.filter(a => a.type === 'Flavor');
+            const beverages = allSelectedItems.filter(a => a.type === 'Beverage');
+
+            return {
+                productId: item.id,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price_pk || item.price,
+                totalPrice: (item.price_pk || item.price) * item.quantity,
+                
+                // Separated arrays containing full user-selected data
+                variants: variants,
+                addons: addons,
+                flavors: flavors,
+                beverages: beverages,
+                
+                image: item.imagepath || item.imageUrl || item.productPic || ""
+            };
+        }),
         subtotal: subtotal,
         gstPercentage: gstPercentage,
         gstAmount: gstAmount,

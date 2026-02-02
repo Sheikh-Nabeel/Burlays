@@ -37,12 +37,26 @@ const CartScreen = () => {
     const fetchBranchDetails = async () => {
         const storedBranch = JSON.parse(localStorage.getItem('selectedBranch') || '{}');
         if (storedBranch.id) {
+            // Set initial value from local storage
+            if (storedBranch.gst) {
+                setGstPercentage(Number(storedBranch.gst));
+            }
+
             try {
-                const branchRef = doc(db, 'branches', storedBranch.id);
+                // Construct reference based on new schema: cities/{cityId}/branches/{branchId}
+                let branchRef;
+                if (storedBranch.cityId) {
+                    branchRef = doc(db, 'cities', storedBranch.cityId, 'branches', storedBranch.id);
+                } else {
+                    // Fallback to global collection if cityId is missing (legacy support)
+                     branchRef = doc(db, 'branches', storedBranch.id);
+                }
+
                 const branchSnap = await getDoc(branchRef);
                 if (branchSnap.exists()) {
                     const branchData = branchSnap.data();
-                    setGstPercentage(Number(branchData.gst || 0));
+                    const newGst = Number(branchData.gst || 0);
+                    setGstPercentage(newGst);
                     
                     // Update local storage to keep it fresh
                     localStorage.setItem('selectedBranch', JSON.stringify({ ...storedBranch, ...branchData }));

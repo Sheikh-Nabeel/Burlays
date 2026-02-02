@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, collectionGroup } from 'firebase/firestore';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 
 const libraries = ['places'];
@@ -49,7 +49,8 @@ const BranchLocatorPage = () => {
   useEffect(() => {
     const fetchBranches = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'branches'));
+        // Use collectionGroup to query all 'branches' subcollections across all cities
+        const querySnapshot = await getDocs(collectionGroup(db, 'branches'));
         const branchesData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()

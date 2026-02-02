@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { FaMapMarkerAlt, FaSpinner, FaMotorcycle, FaTimes } from 'react-icons/fa';
 
-const BranchSelection = ({ onSelectBranch }) => {
+const BranchSelection = ({ onSelectBranch, onClose }) => {
   const [cities, setCities] = useState([]);
   const [tradeAreas, setTradeAreas] = useState([]);
   
@@ -11,6 +11,14 @@ const BranchSelection = ({ onSelectBranch }) => {
   const [selectedTradeArea, setSelectedTradeArea] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Disable scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   // Fetch Cities on Mount
   useEffect(() => {
@@ -130,13 +138,18 @@ const BranchSelection = ({ onSelectBranch }) => {
   }
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/hero-bg.jpg')", backgroundColor: '#1a1a1a' }}>
-      {/* Overlay: semi-transparent white with backdrop blur for frosted glass effect */}
-      <div className="absolute inset-0 bg-white/30 backdrop-blur-md"></div>
-
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       {/* Modal */}
       <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden mx-4 animate-fadeIn">
         
+        {/* Close Button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500 hover:text-red-500 transition-colors"
+        >
+          <FaTimes className="w-4 h-4" />
+        </button>
+
         {/* Header */}
         <div className="p-6 text-center border-b border-gray-100">
           <img src="/logo.png" alt="Logo" className="h-16 mx-auto mb-4 object-contain" />

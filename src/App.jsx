@@ -26,20 +26,24 @@ const App = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [showBranchSelection, setShowBranchSelection] = React.useState(true);
+
   const location = useLocation();
   const hideFloatingButtonPaths = ['/login', '/cart', '/PaymentScreen', '/branches'];
   const shouldHideFloatingButton = hideFloatingButtonPaths.some(path => location.pathname.startsWith(path));
   const isLoginPage = location.pathname === '/login';
 
-  if (!selectedBranch) {
-    return <BranchSelection onSelectBranch={setSelectedBranch} />;
-  }
-
   return (
     <div className="bg-white text-darkSecondary font-serif relative">
       <ToastContainer position="top-right" autoClose={2000} />
+      {!selectedBranch && showBranchSelection && (
+        <BranchSelection 
+          onSelectBranch={setSelectedBranch} 
+          onClose={() => setShowBranchSelection(false)} 
+        />
+      )}
       {!isLoginPage && <Header />}
-      <Routes>
+      <Routes key={selectedBranch ? selectedBranch.id : 'no-branch'}>
         <Route path="/" element={<Home />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/SingleProduct" element={<SingleProduct />} />
