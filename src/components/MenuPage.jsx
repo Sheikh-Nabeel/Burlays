@@ -39,8 +39,11 @@ const MenuPage = () => {
   const handleAddToCart = () => {
     if (!selectedProduct) return;
 
-    // Start with base price
+    // Start with base price (prioritizing discountPrice if available)
     let finalPrice = Number(selectedProduct.price || 0);
+    if (selectedProduct.discountPrice && Number(selectedProduct.discountPrice) > 0) {
+        finalPrice = Number(selectedProduct.discountPrice);
+    }
     
     // If a variant is selected, use the variant's price instead of the base price
     if (selectedVariants && selectedVariants.price) {
@@ -75,27 +78,61 @@ const MenuPage = () => {
 
       try {
         // 1. Get Categories
-        const categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
+        let categoriesRef;
+        
+        // Strict adherence to schema: cities/{cityId}/branches/{branchId}/categories
+        if (selectedBranch.cityId) {
+             categoriesRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`);
+        } else {
+             console.error("Missing cityId in selectedBranch for MenuPage");
+             // Attempt fallback
+             categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
+        }
+
         const categoriesSnapshot = await getDocs(categoriesRef);
         
         const categoriesData = await Promise.all(categoriesSnapshot.docs.map(async (categoryDoc) => {
+          const categoryData = categoryDoc.data();
+          
+          // Skip inactive categories if needed
+          if (categoryData.active === false) return null;
+
           // 2. Get Products for each Category
-          // The collection name in your screenshot is "products" (lowercase), not "Products" (uppercase)
-          const productsRef = collection(db, `branches/${selectedBranch.id}/categories/${categoryDoc.id}/products`);
+          // Schema: cities/{cityId}/branches/{branchId}/categories/{categoryId}/products
+          let productsRef;
+          
+          if (selectedBranch.cityId) {
+               productsRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories/${categoryDoc.id}/products`);
+          } else {
+               productsRef = collection(db, `branches/${selectedBranch.id}/categories/${categoryDoc.id}/products`);
+          }
+
           const productsSnapshot = await getDocs(productsRef);
-          const productsData = productsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
+          const productsData = productsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            // console.log("Raw Product Data:", data); // Debugging
+            return {
+                id: doc.id,
+                ...data,
+                // Explicitly ensure flavors array preserves all fields
+                flavors: data.flavors ? data.flavors.map(f => ({
+                    ...f,
+                    // Force copy potentially missed fields if they are weirdly named or non-enumerable?
+                    // Usually ...f is enough, but maybe there's a getter/setter issue?
+                    // Let's just trust ...f for now, but the issue is deeper.
+                })) : []
+            };
+          }).filter(prod => prod.inStock !== false); // Filter out out-of-stock items if desired, or handle in UI
 
           return {
             id: categoryDoc.id,
-            ...categoryDoc.data(),
+            ...categoryData,
             products: productsData
           };
         }));
         
-        setCategories(categoriesData);
+        // Filter out nulls (inactive categories)
+        setCategories(categoriesData.filter(cat => cat !== null));
       } catch (error) {
         console.error("Error fetching menu data:", error);
       } finally {
@@ -192,15 +229,63 @@ const MenuPage = () => {
     }
   };
 
+  const getFlavorImage = (flavor) => {
+      // 1. Get raw value from any possible field
+      let raw = flavor.imageUrl || flavor.image_url || flavor.image || flavor.img || flavor.imagepath || flavor.path;
+      
+      // 2. Validate it exists and is a string
+      if (!raw) return null;
+      
+      // 3. Nuclear option: Remove ALL quotes (single/double) and backticks globally
+      // This turns `" `http://url` "` into ` http://url `
+      let clean = String(raw).replace(/["'`]/g, "").trim();
+      
+      return clean.length > 0 ? clean : null;
+  };
+
   const getProductPrice = (product) => {
       // Logic to show base price or range if variants exist
       const validVariants = product.variants ? product.variants.filter(v => v.name) : [];
+      
+      let priceDisplay;
+      let hasDiscount = false;
+      let originalPrice = 0;
+
       if (validVariants.length > 0) {
           const prices = validVariants.map(v => Number(v.price));
           const minPrice = Math.min(...prices);
-          return `Rs. ${minPrice}`;
+          priceDisplay = minPrice;
+      } else {
+          // Logic for Price vs Discount Price
+          // 1. "price" field is the Base/Original Price
+          // 2. "discountPrice" is the Selling Price (if it exists and is valid)
+          
+          const basePrice = Number(product.price || 0);
+          const discountPrice = Number(product.discountPrice || 0);
+
+          if (discountPrice > 0) {
+              // Always prioritize discountPrice as the selling price if it exists
+              priceDisplay = discountPrice;
+              originalPrice = basePrice;
+              hasDiscount = true;
+          } else {
+              // No discount
+              priceDisplay = basePrice;
+          }
       }
-      return `Rs. ${Number(product.price || 0)}`;
+
+      return (
+          <div className="flex flex-col items-start">
+             {hasDiscount && (
+                 <span className="text-xs text-gray-400 line-through decoration-red-500 decoration-2">
+                     Rs. {originalPrice.toLocaleString()}
+                 </span>
+             )}
+             <span className="text-[#E25C1D] font-bold text-lg">
+                 Rs. {priceDisplay.toLocaleString()}
+             </span>
+          </div>
+      );
   };
 
   // Filter products based on search query
@@ -306,7 +391,7 @@ const MenuPage = () => {
                         <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
                             <div className="flex flex-col">
                                 <span className="text-xs text-gray-500 font-medium">Starting Price</span>
-                                <span className="text-[#E25C1D] font-bold text-lg">{getProductPrice(product)}</span>
+                                {getProductPrice(product)}
                             </div>
                             <button 
                                 onClick={() => openProductModal(product)}
@@ -408,16 +493,16 @@ const MenuPage = () => {
                         <div className="space-y-3">
                             {selectedProduct.variants.filter(v => v.name).map((variant, index) => (
                                 <label 
-                                    key={index}
+                                    key={variant.id || index}
                                     className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                                        selectedVariants.name === variant.name 
+                                        selectedVariants.id === variant.id || selectedVariants.name === variant.name 
                                             ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
                                             : 'border-gray-100 hover:border-gray-200'
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className={`w-12 h-12 rounded-lg border flex-shrink-0 overflow-hidden ${
-                                            selectedVariants.name === variant.name ? 'border-[#FFC72C]' : 'border-gray-200'
+                                            selectedVariants.id === variant.id || selectedVariants.name === variant.name ? 'border-[#FFC72C]' : 'border-gray-200'
                                         }`}>
                                             <img 
                                                 src={variant.imageUrl || selectedProduct.imageUrl || selectedProduct.imagepath || "https://via.placeholder.com/150"} 
@@ -427,7 +512,7 @@ const MenuPage = () => {
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="font-medium text-gray-700">{variant.name}</span>
-                                            {selectedVariants.name === variant.name && (
+                                            {(selectedVariants.id === variant.id || selectedVariants.name === variant.name) && (
                                                 <span className="text-xs text-[#E25C1D] font-bold">Selected</span>
                                             )}
                                         </div>
@@ -438,15 +523,15 @@ const MenuPage = () => {
                                             type="radio" 
                                             name="variant" 
                                             className="hidden"
-                                            checked={selectedVariants.name === variant.name}
+                                            checked={selectedVariants.id === variant.id || selectedVariants.name === variant.name}
                                             onChange={() => setSelectedVariants(variant)}
                                         />
                                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                            selectedVariants.name === variant.name 
+                                            selectedVariants.id === variant.id || selectedVariants.name === variant.name 
                                                 ? 'border-[#FFC72C]' 
                                                 : 'border-gray-300'
                                         }`}>
-                                            {selectedVariants.name === variant.name && (
+                                            {(selectedVariants.id === variant.id || selectedVariants.name === variant.name) && (
                                                 <div className="w-2.5 h-2.5 rounded-full bg-[#FFC72C]"></div>
                                             )}
                                         </div>
@@ -466,15 +551,15 @@ const MenuPage = () => {
                         </h3>
                         <div className="space-y-3">
                             {selectedProduct.addons.filter(a => a.name).map((addon, index) => (
-                                <div key={index} className="flex flex-col gap-2 p-4 rounded-xl border border-gray-100">
+                                <div key={addon.id || index} className="flex flex-col gap-2 p-4 rounded-xl border border-gray-100">
                                     <label 
                                         className={`flex items-center justify-between cursor-pointer transition-all ${
-                                            selectedAddons[index] ? 'opacity-100' : 'opacity-80'
+                                            selectedAddons[addon.id || index] ? 'opacity-100' : 'opacity-80'
                                         }`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className={`w-12 h-12 rounded-lg border flex-shrink-0 overflow-hidden ${
-                                                selectedAddons[index] ? 'border-[#FFC72C]' : 'border-gray-200'
+                                                selectedAddons[addon.id || index] ? 'border-[#FFC72C]' : 'border-gray-200'
                                             }`}>
                                                 <img 
                                                     src={addon.imageUrl || "https://via.placeholder.com/150"} 
@@ -489,23 +574,29 @@ const MenuPage = () => {
                                             <input 
                                                 type="checkbox" 
                                                 className="hidden"
-                                                checked={!!selectedAddons[index]}
+                                                checked={!!selectedAddons[addon.id || index]}
                                                 onChange={(e) => {
                                                     const newAddons = { ...selectedAddons };
                                                     if (e.target.checked) {
-                                                        newAddons[index] = { ...addon, quantity: 1 };
+                                                        newAddons[addon.id || index] = { 
+                                                            id: addon.id,
+                                                            name: addon.name,
+                                                            price: addon.price,
+                                                            imageUrl: addon.imageUrl,
+                                                            quantity: 1 
+                                                        };
                                                     } else {
-                                                        delete newAddons[index];
+                                                        delete newAddons[addon.id || index];
                                                     }
                                                     setSelectedAddons(newAddons);
                                                 }}
                                             />
                                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                                selectedAddons[index] 
+                                                selectedAddons[addon.id || index] 
                                                     ? 'border-[#FFC72C] bg-[#FFC72C]' 
                                                     : 'border-gray-300'
                                             }`}>
-                                                {selectedAddons[index] && (
+                                                {selectedAddons[addon.id || index] && (
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-white">
                                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                     </svg>
@@ -515,18 +606,18 @@ const MenuPage = () => {
                                     </label>
                                     
                                     {/* Quantity Controls for Addon */}
-                                    {selectedAddons[index] && (
+                                    {selectedAddons[addon.id || index] && (
                                         <div className="flex justify-end items-center mt-2 border-t border-gray-50 pt-2">
                                             <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         const newAddons = { ...selectedAddons };
-                                                        if (newAddons[index].quantity > 1) {
-                                                            newAddons[index].quantity -= 1;
+                                                        if (newAddons[addon.id || index].quantity > 1) {
+                                                            newAddons[addon.id || index].quantity -= 1;
                                                             setSelectedAddons(newAddons);
                                                         } else {
-                                                            delete newAddons[index];
+                                                            delete newAddons[addon.id || index];
                                                             setSelectedAddons(newAddons);
                                                         }
                                                     }}
@@ -534,12 +625,12 @@ const MenuPage = () => {
                                                 >
                                                     −
                                                 </button>
-                                                <span className="text-xs font-bold w-4 text-center">{selectedAddons[index].quantity}</span>
+                                                <span className="text-xs font-bold w-4 text-center">{selectedAddons[addon.id || index].quantity}</span>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         const newAddons = { ...selectedAddons };
-                                                        newAddons[index].quantity = (newAddons[index].quantity || 1) + 1;
+                                                        newAddons[addon.id || index].quantity = (newAddons[addon.id || index].quantity || 1) + 1;
                                                         setSelectedAddons(newAddons);
                                                     }}
                                                     className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black font-bold"
@@ -551,6 +642,146 @@ const MenuPage = () => {
                                     )}
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Beverages Section */}
+                {selectedProduct.Beverages && selectedProduct.Beverages.length > 0 && selectedProduct.Beverages.some(b => b.name) && (
+                    <div className="mb-6">
+                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
+                            Beverages 
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Optional</span>
+                        </h3>
+                        <div className="space-y-2">
+                            {selectedProduct.Beverages.filter(b => b.name).map((beverage, index) => (
+                                <label 
+                                    key={`bev-${beverage.id || index}`}
+                                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
+                                        selectedAddons[`bev-${beverage.id || index}`] 
+                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
+                                            : 'border-gray-100 hover:border-gray-200'
+                                    }`}
+                                >
+                                    <span className="font-medium text-gray-700">{beverage.name}</span>
+                                    <div className="flex items-center gap-3">
+                                        <input 
+                                            type="checkbox" 
+                                            className="hidden"
+                                            checked={!!selectedAddons[`bev-${beverage.id || index}`]}
+                                            onChange={(e) => {
+                                                const newAddons = { ...selectedAddons };
+                                                if (e.target.checked) {
+                                                    newAddons[`bev-${beverage.id || index}`] = { 
+                                                        id: beverage.id,
+                                                        name: beverage.name, 
+                                                        price: 0, // Assuming beverages might be free or included, update if they have price
+                                                        quantity: 1,
+                                                        type: 'Beverage'
+                                                    };
+                                                } else {
+                                                    delete newAddons[`bev-${beverage.id || index}`];
+                                                }
+                                                setSelectedAddons(newAddons);
+                                            }}
+                                        />
+                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                            selectedAddons[`bev-${beverage.id || index}`] 
+                                                ? 'border-[#FFC72C] bg-[#FFC72C]' 
+                                                : 'border-gray-300'
+                                        }`}>
+                                            {selectedAddons[`bev-${beverage.id || index}`] && (
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-white">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Flavors Section */}
+                {selectedProduct.flavors && selectedProduct.flavors.length > 0 && selectedProduct.flavors.some(f => f.name) && (
+                    <div className="mb-6">
+                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
+                            Flavors 
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Required</span>
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {selectedProduct.flavors.filter(f => f.name).map((flavor, index) => {
+                                const isSelected = selectedAddons['flavor']?.id === flavor.id || selectedAddons['flavor']?.name === flavor.name;
+                                const flavorImg = getFlavorImage(flavor);
+                                return (
+                                <label 
+                                    key={`flav-${flavor.id || index}`}
+                                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                        isSelected
+                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
+                                            : 'border-gray-100 hover:border-gray-200'
+                                    }`}
+                                >
+                                    {flavorImg && (
+                                        <div className="w-16 h-16 mb-2 rounded-full overflow-hidden border border-gray-100 bg-gray-50 relative">
+                                            <img 
+                                                src={flavorImg} 
+                                                alt={flavor.name} 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    console.error("Flavor Image Load Error:", flavorImg); // Log the URL that failed
+                                                    e.target.style.border = "2px solid red"; // Highlight failed image
+                                                    // Fallback to placeholder
+                                                    e.target.src = "https://via.placeholder.com/150?text=Error";
+                                                }}
+                                                loading="lazy"
+                                                referrerPolicy="no-referrer"
+                                            />
+                                        </div>
+                                    )}
+                                    {/* Temporary Debug Text to See Raw URL */}
+                                    <div className="text-[10px] text-red-500 break-all max-w-[100px] text-center mb-1 leading-tight bg-white border border-red-200 p-1 rounded z-50">
+                                        DEBUG: {JSON.stringify(flavor)}
+                                    </div>
+                                    <span className={`text-sm text-center ${isSelected ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+                                        {flavor.name}
+                                    </span>
+                                    {flavor.price && Number(flavor.price) > 0 && (
+                                        <span className="text-xs text-[#E25C1D] font-bold mt-1">
+                                            + Rs. {Number(flavor.price).toLocaleString()}
+                                        </span>
+                                    )}
+                                    
+                                    {/* Selection Indicator */}
+                                    {isSelected && (
+                                        <div className="absolute top-2 right-2 w-4 h-4 bg-[#FFC72C] rounded-full flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    )}
+
+                                    <input 
+                                        type="radio" 
+                                        name="flavor_selection"
+                                        className="hidden"
+                                        checked={isSelected}
+                                        onChange={() => {
+                                            const newAddons = { ...selectedAddons };
+                                            newAddons['flavor'] = { 
+                                                id: flavor.id,
+                                                name: flavor.name, 
+                                                imageUrl: flavorImg,
+                                                price: Number(flavor.price || 0), 
+                                                quantity: 1,
+                                                type: 'Flavor'
+                                            };
+                                            setSelectedAddons(newAddons);
+                                        }}
+                                    />
+                                </label>
+                            );})}
                         </div>
                     </div>
                 )}
@@ -567,11 +798,20 @@ const MenuPage = () => {
                     <span>
                         Rs. {(() => {
                             let total = Number(selectedProduct.price || 0);
-                            // If variant selected, use that price instead of base (or add to it depending on your logic, usually variants replace base price)
-                            if (selectedVariants.price) total = Number(selectedVariants.price);
                             
-                            Object.values(selectedAddons).forEach(a => total += Number(a.price) * (a.quantity || 1));
-                            return total;
+                            // Check for discount price - strict override if exists
+                            if (selectedProduct.discountPrice && Number(selectedProduct.discountPrice) > 0) {
+                                total = Number(selectedProduct.discountPrice);
+                            }
+
+                            // If variant selected, use that price instead of base/discount
+                            // Note: Variants usually contain the full price, not an addition.
+                            if (selectedVariants.price) {
+                                total = Number(selectedVariants.price);
+                            }
+                            
+                            Object.values(selectedAddons).forEach(a => total += Number(a.price || 0) * (a.quantity || 1));
+                            return total.toLocaleString();
                         })()}
                     </span>
                 </button>

@@ -21,14 +21,40 @@ const CategoriesGrid = () => {
       }
 
       try {
-        // Construct the path: branches/{branchId}/categories
-        const categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
+        // Construct the path based on the user's specific database structure
+        // cities/{cityId}/branches/{branchId}/categories
+        
+        // We need to know the cityId. 
+        // 1. Check if it's already in the branch object (if we stored it during selection)
+        // 2. If not, we might need to query or find it.
+        
+        let categoriesRef;
+        
+        // Use the new nested structure: cities/{cityId}/branches/{branchId}/categories
+        if (selectedBranch.cityId) {
+             categoriesRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`);
+        } else {
+             // Fallback for legacy data or direct branch access without city context
+             // Try to find the cityId from the branch document if possible, or assume a global structure (which we know is incorrect now but kept for safety)
+             // Given the strict schema provided, it MUST be nested.
+             console.warn("Missing cityId in selectedBranch, attempting to use provided schema path structure.");
+             if (selectedBranch.cityId) {
+                categoriesRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`);
+             } else {
+                 // If we really don't have cityId, we can't construct the path. 
+                 // However, the selectedBranch object SHOULD have cityId if it came from BranchSelection.
+                 console.error("Critical Error: cityId missing from selectedBranch object", selectedBranch);
+                 // Attempt global fallback just in case, but likely will fail or return nothing if collection doesn't exist
+                 categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
+             }
+        }
+
         const querySnapshot = await getDocs(categoriesRef);
         
         const categoriesData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })).filter(cat => cat.active !== false); // Filter out inactive categories if 'active' field exists
         
         setCategories(categoriesData);
       } catch (error) {
