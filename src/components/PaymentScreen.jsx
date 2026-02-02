@@ -64,13 +64,23 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
             quantity: item.quantity,
             price: item.price_pk || item.price,
             totalPrice: (item.price_pk || item.price) * item.quantity,
-            variant: item.selectedVariants || null,
+            // Include full variants/addons data structure
+            selectedVariants: item.selectedVariants || {},
+            selectedAddons: item.selectedAddons || {}, 
+            // Legacy mapping for backward compatibility if needed, but above fields are more complete
+            variant: item.selectedVariants ? {
+                id: item.selectedVariants.id,
+                name: item.selectedVariants.name,
+                price: item.selectedVariants.price
+            } : null,
             addons: item.selectedAddons ? Object.values(item.selectedAddons).map(addon => ({
+                id: addon.id,
                 name: addon.name,
                 price: addon.price,
-                quantity: addon.quantity || 1
-            })) : null,
-            image: item.imagepath || item.productPic || ""
+                quantity: addon.quantity || 1,
+                type: addon.type || 'Addon' // Distinguish between Flavor, Beverage, regular Addon
+            })) : [],
+            image: item.imagepath || item.imageUrl || item.productPic || ""
         })),
         subtotal: subtotal,
         gstPercentage: gstPercentage,

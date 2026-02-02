@@ -131,8 +131,8 @@ const BranchSelection = ({ onSelectBranch }) => {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/hero-bg.jpg')", backgroundColor: '#1a1a1a' }}>
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+      {/* Overlay: semi-transparent white with backdrop blur for frosted glass effect */}
+      <div className="absolute inset-0 bg-white/30 backdrop-blur-md"></div>
 
       {/* Modal */}
       <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden mx-4 animate-fadeIn">

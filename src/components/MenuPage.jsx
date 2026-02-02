@@ -111,16 +111,18 @@ const MenuPage = () => {
           const productsData = productsSnapshot.docs.map(doc => {
             const data = doc.data();
             // console.log("Raw Product Data:", data); // Debugging
+            
+            // Ensure flavors are correctly mapped
+            const flavors = data.flavors ? data.flavors.map(f => {
+                // If flavor is a string (legacy data), convert to object
+                if (typeof f === 'string') return { name: f, id: f };
+                return { ...f };
+            }) : [];
+
             return {
                 id: doc.id,
                 ...data,
-                // Explicitly ensure flavors array preserves all fields
-                flavors: data.flavors ? data.flavors.map(f => ({
-                    ...f,
-                    // Force copy potentially missed fields if they are weirdly named or non-enumerable?
-                    // Usually ...f is enough, but maybe there's a getter/setter issue?
-                    // Let's just trust ...f for now, but the issue is deeper.
-                })) : []
+                flavors: flavors
             };
           }).filter(prod => prod.inStock !== false); // Filter out out-of-stock items if desired, or handle in UI
 
@@ -244,34 +246,25 @@ const MenuPage = () => {
   };
 
   const getProductPrice = (product) => {
-      // Logic to show base price or range if variants exist
-      const validVariants = product.variants ? product.variants.filter(v => v.name) : [];
+      // User explicit instruction: "don't use variants price for main display"
+      // Use strictly product.price and product.discountPrice
+      
+      const basePrice = Number(product.price || 0);
+      const discountPrice = Number(product.discountPrice || 0);
       
       let priceDisplay;
       let hasDiscount = false;
       let originalPrice = 0;
 
-      if (validVariants.length > 0) {
-          const prices = validVariants.map(v => Number(v.price));
-          const minPrice = Math.min(...prices);
-          priceDisplay = minPrice;
+      if (discountPrice > 0) {
+          // Always prioritize discountPrice as the selling price if it exists
+          priceDisplay = discountPrice;
+          originalPrice = basePrice;
+          // ALWAYS show original price crossed out if discount exists
+          hasDiscount = true;
       } else {
-          // Logic for Price vs Discount Price
-          // 1. "price" field is the Base/Original Price
-          // 2. "discountPrice" is the Selling Price (if it exists and is valid)
-          
-          const basePrice = Number(product.price || 0);
-          const discountPrice = Number(product.discountPrice || 0);
-
-          if (discountPrice > 0) {
-              // Always prioritize discountPrice as the selling price if it exists
-              priceDisplay = discountPrice;
-              originalPrice = basePrice;
-              hasDiscount = true;
-          } else {
-              // No discount
-              priceDisplay = basePrice;
-          }
+          // No discount
+          priceDisplay = basePrice;
       }
 
       return (
@@ -583,7 +576,8 @@ const MenuPage = () => {
                                                             name: addon.name,
                                                             price: addon.price,
                                                             imageUrl: addon.imageUrl,
-                                                            quantity: 1 
+                                                            quantity: 1,
+                                                            type: 'Addon' // Explicitly label as regular addon
                                                         };
                                                     } else {
                                                         delete newAddons[addon.id || index];
@@ -712,7 +706,7 @@ const MenuPage = () => {
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {selectedProduct.flavors.filter(f => f.name).map((flavor, index) => {
-                                const isSelected = selectedAddons['flavor']?.id === flavor.id || selectedAddons['flavor']?.name === flavor.name;
+                                const isSelected = selectedAddons['flavor']?.name === flavor.name;
                                 const flavorImg = getFlavorImage(flavor);
                                 return (
                                 <label 
@@ -730,20 +724,18 @@ const MenuPage = () => {
                                                 alt={flavor.name} 
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
-                                                    console.error("Flavor Image Load Error:", flavorImg); // Log the URL that failed
-                                                    e.target.style.border = "2px solid red"; // Highlight failed image
-                                                    // Fallback to placeholder
-                                                    e.target.src = "https://via.placeholder.com/150?text=Error";
+                                                    // Fallback to placeholder instead of hiding
+                                                    e.target.src = "https://via.placeholder.com/150?text=No+Image";
+                                                    // Only hide if the fallback also fails to prevent infinite loop
+                                                    e.target.onerror = () => {
+                                                        e.target.style.display = 'none';
+                                                    };
                                                 }}
                                                 loading="lazy"
                                                 referrerPolicy="no-referrer"
                                             />
                                         </div>
                                     )}
-                                    {/* Temporary Debug Text to See Raw URL */}
-                                    <div className="text-[10px] text-red-500 break-all max-w-[100px] text-center mb-1 leading-tight bg-white border border-red-200 p-1 rounded z-50">
-                                        DEBUG: {JSON.stringify(flavor)}
-                                    </div>
                                     <span className={`text-sm text-center ${isSelected ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
                                         {flavor.name}
                                     </span>
