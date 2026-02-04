@@ -77,6 +77,35 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
     document.body.style.overflow = isMenuOpen ? "hidden" : "";
   }, [isMenuOpen]);
 
+  const handleCallHotline = () => {
+    const selectedBranch = JSON.parse(localStorage.getItem('selectedBranch') || '{}');
+    let phone = selectedBranch.phone || '';
+
+    if (!phone) {
+        // Fallback or alert if no phone number
+        return;
+    }
+
+    // 1. Remove spaces
+    phone = phone.replace(/\s+/g, '');
+
+    // 2. Handle 03... -> +923...
+    if (phone.startsWith('03')) {
+        phone = '+92' + phone.substring(1);
+    } 
+    // 3. If it doesn't start with +92, add it
+    else if (!phone.startsWith('+92')) {
+        // Handle case where it might start with 92 without +
+        if (phone.startsWith('92')) {
+            phone = '+' + phone;
+        } else {
+            phone = '+92' + phone;
+        }
+    }
+
+    window.location.href = `tel:${phone}`;
+  };
+
   return (
     <header className={`sticky top-0 w-full z-50 transition-transform duration-300 ${isVisible ? "translate-y-0" : "-translate-y-full"}`}>
       <nav className="bg-white border-b shadow-sm" style={{ borderColor: '#F1F3F4' }}>
@@ -253,7 +282,11 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                     </button>
                   </div>
   
-                  <div className="px-6 py-4 flex items-center justify-between mt-auto" style={{ backgroundColor: '#FFC72C' }}>
+                  <button 
+                    onClick={handleCallHotline}
+                    className="px-6 py-4 flex items-center justify-between mt-auto w-full hover:bg-[#ffcf4b] transition-colors" 
+                    style={{ backgroundColor: '#FFC72C' }}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center">
                         <img src="/logo.png" alt="Logo" className="w-5 h-5 opacity-50" />
@@ -263,7 +296,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                     <div className="w-8 h-8 rounded-full bg-[#1E1E1E] flex items-center justify-center text-[#FFC72C]">
                       <FaPhone className="w-4 h-4" />
                     </div>
-                  </div>
+                  </button>
                 </div>
               </motion.aside>
             </div>
