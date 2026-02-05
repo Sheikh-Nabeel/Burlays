@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getProducts } from "../utils/constants";
 import { FaArrowLeft, FaShoppingCart } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
+import { auth } from "../firebase";
+import { toast } from "react-toastify";
 
 const ProductsPage = () => {
   const { categoryId, subCategoryId } = useParams();
@@ -10,6 +12,17 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleAddToCart = (prod) => {
+    if (!auth.currentUser) {
+      toast.info("Please login to add items to cart");
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+    addToCart(prod);
+    toast.success(`${prod.name} added to cart!`);
+  };
 
   useEffect(() => {
     try {
@@ -48,7 +61,7 @@ const ProductsPage = () => {
               PKR {prod.price_pk} / £{prod.price_uk}
             </p>
             <button
-              onClick={() => addToCart(prod)}
+              onClick={() => handleAddToCart(prod)}
               className="mt-3 px-4 py-2 rounded-lg flex items-center text-black"
               style={{ backgroundColor: "#FFC72C" }}
             >

@@ -99,7 +99,7 @@ const CategoriesGrid = () => {
             Explore Menu
           </h2>
           <button 
-            onClick={() => navigate('/categories')}
+            onClick={() => navigate('/menu')}
             className="text-[#E25C1D] font-bold text-sm hover:underline"
           >
             VIEW ALL

@@ -17,13 +17,31 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Check auth and prefill phone
+  // Check auth and prefill phone and address
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
         if (!user) {
             navigate('/login', { state: { from: routerLocation } });
         } else {
             setPhone(user.phoneNumber || "");
+            
+            try {
+                // Fetch saved address from Customers collection
+                const userRef = doc(db, "Customers", user.uid);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    if (userData.address) {
+                        setAddress(userData.address);
+                    }
+                    // Also prefer phone from profile if available (might be different from auth phone?)
+                    if (userData.phone) {
+                        setPhone(userData.phone);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching user details:", error);
+            }
         }
     });
     return () => unsubscribe();
@@ -99,13 +117,25 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
         platform: "web"
       };
 
-      // 1. Create Order in 'orders' collection
-      const docRef = await addDoc(collection(db, "orders"), orderData);
+      // 1. Create Order in the specific branch's orders collection
+      // Path: cities/{cityId}/branches/{branchId}/orders
+      let ordersRef;
+      if (selectedBranch.cityId) {
+          ordersRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/orders`);
+      } else {
+          // Fallback if cityId is somehow missing (legacy support)
+          console.warn("Missing cityId for order placement, falling back to top-level orders");
+          ordersRef = collection(db, "orders");
+      }
+      
+      const docRef = await addDoc(ordersRef, orderData);
 
-      // 2. Update Customer's orderHistory
+      // 2. Update Customer's orderHistory and save address
       const userRef = doc(db, "Customers", user.uid);
       await updateDoc(userRef, {
-        orderHistory: arrayUnion(docRef.id)
+        orderHistory: arrayUnion(docRef.id),
+        address: address, // Save the address for next time
+        phone: phone      // Update phone if changed
       });
 
       clearCart();

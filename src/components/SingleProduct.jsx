@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { FaArrowLeft, FaShoppingCart } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
+import { auth } from "../firebase";
+import { toast } from "react-toastify";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const COLORS = {
   primary: "#FFC72C",
@@ -12,6 +15,18 @@ const COLORS = {
 const SingleProduct = ({ product, onBack }) => {
   const [selectedCategory, setSelectedCategory] = useState("Baby Food");
   const { addToCart } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleAddToCart = () => {
+    if (!auth.currentUser) {
+      toast.info("Please login to add items to cart");
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+    addToCart(product);
+    toast.success("Added to cart!");
+  };
 
   const categories = [
     "Baby Food",
@@ -73,7 +88,7 @@ const SingleProduct = ({ product, onBack }) => {
       {/* Add to Cart Button */}
       <div className="absolute bottom-4 right-4">
         <button
-          onClick={() => addToCart(product)}
+          onClick={handleAddToCart}
           className="text-black px-4 py-2 rounded-full flex items-center"
           style={{ backgroundColor: "#FFC72C" }}
         >

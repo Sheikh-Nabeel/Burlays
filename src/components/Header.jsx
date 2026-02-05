@@ -109,7 +109,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   return (
     <header className={`sticky top-0 w-full z-50 transition-transform duration-300 ${isVisible ? "translate-y-0" : "-translate-y-full"}`}>
       <nav className="bg-white border-b shadow-sm" style={{ borderColor: '#F1F3F4' }}>
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="w-full px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               className="p-1 rounded-md"
@@ -131,14 +131,6 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                     type="text" 
                     placeholder="Find in burlays" 
                     onChange={handleSearch}
-                    className="w-full bg-gray-50 border-none rounded-md py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-[#FFC72C]"
-                  />
-              </div>
-              <div className="flex-1 relative">
-                  <FaMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input 
-                    type="text" 
-                    placeholder="Enter the Delivery Address" 
                     className="w-full bg-gray-50 border-none rounded-md py-2.5 pl-10 pr-4 text-sm focus:ring-1 focus:ring-[#FFC72C]"
                   />
               </div>
@@ -244,7 +236,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                   <div className="flex-1 py-2 overflow-y-auto bg-white">
                     <button 
                       className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
-                      onClick={() => { navigate('/categories'); setIsMenuOpen(false); }}
+                      onClick={() => { navigate('/menu'); setIsMenuOpen(false); }}
                     >
                       <FaTh className="w-5 h-5 text-gray-600" />
                       <span className="font-semibold text-sm text-[#1E1E1E]">Explore Menu</span>

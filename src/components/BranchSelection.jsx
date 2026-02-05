@@ -101,7 +101,11 @@ const BranchSelection = ({ onSelectBranch, onClose }) => {
       const branchSnap = await getDoc(branchRef);
 
       if (branchSnap.exists()) {
-        const branchData = { id: branchSnap.id, ...branchSnap.data() };
+        const branchData = { 
+          id: branchSnap.id, 
+          cityId: selectedCity, // Save cityId for future reference
+          ...branchSnap.data() 
+        };
         
         // Save to localStorage and notify App
         localStorage.setItem('selectedBranch', JSON.stringify(branchData));

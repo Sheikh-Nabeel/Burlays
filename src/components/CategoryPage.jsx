@@ -5,13 +5,33 @@ import { FaArrowLeft, FaShoppingCart, FaCheck } from "react-icons/fa";
 import { useCart } from "../contexts/CartContext";
 import { toast } from "react-toastify";
 import Header from "./Header";
-import { useLocation } from "../hooks/useLocation";
+import { useLocation } from "../hooks/useLocation"; // This is the custom hook
+import { useLocation as useRouterLocation } from "react-router-dom";
+import { auth } from "../firebase";
 
 const CategoryPage = () => {
   const { categoryId } = useParams();
   const navigate = useNavigate();
   const { addToCart, cartItems } = useCart();
   const { location } = useLocation();
+  const routerLocation = useRouterLocation();
+
+  const handleAddToCart = (product, color = null) => {
+    if (!auth.currentUser) {
+        toast.info("Please login to add items to cart");
+        navigate('/login', { state: { from: routerLocation } });
+        return;
+    }
+
+    addToCart({
+        ...product,
+        selectedColor: color
+    });
+    
+    toast.success(
+        `${product.name} ${color ? `(${color}) ` : ""}added to cart!`
+    );
+  };
 
   const [subcategories, setSubcategories] = useState([]);
   const [selectedSub, setSelectedSub] = useState(null);
@@ -127,8 +147,7 @@ const CategoryPage = () => {
                   onClick={(e) => {
                     e.stopPropagation();
                     if (!isInCart && prod.inStock) {
-                      addToCart(prod);
-                      toast.success(`${prod.name} added to cart!`);
+                      handleAddToCart(prod);
                     }
                   }}
                   disabled={!prod.inStock}
@@ -229,15 +248,7 @@ const CategoryPage = () => {
                   return alert("Please select a color before adding to cart");
                 }
 
-                addToCart({
-                  ...selectedProduct,
-                  selectedColor: selectedColor || null, // 👈 save color with product
-                });
-                toast.success(
-                  `${selectedProduct.name} ${
-                    selectedColor ? `(${selectedColor}) ` : ""
-                  }added to cart!`
-                );
+                handleAddToCart(selectedProduct, selectedColor || null);
                 setSelectedProduct(null); // close popup after adding
                 setSelectedColor(null); // reset selection
               }}

@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { FaShoppingCart, FaPlus, FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 import { motion } from "framer-motion";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
+import { toast } from "react-toastify";
 
 const MenuPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart, cartItems, getTotalPrice } = useCart();
   
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -37,6 +39,12 @@ const MenuPage = () => {
   };
 
   const handleAddToCart = () => {
+    if (!auth.currentUser) {
+        toast.info("Please login to add items to cart");
+        navigate('/login', { state: { from: location } });
+        return;
+    }
+
     if (!selectedProduct) return;
 
     // Start with base price (prioritizing discountPrice if available)
@@ -76,16 +84,28 @@ const MenuPage = () => {
         return;
       }
 
+      // 1. Try to load from cache first for instant feel
+      const cacheKey = `menuCache_${selectedBranch.id}`;
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+          try {
+              const parsedCache = JSON.parse(cachedData);
+              if (parsedCache && Array.isArray(parsedCache) && parsedCache.length > 0) {
+                  setCategories(parsedCache);
+                  setLoading(false); // Show content immediately
+              }
+          } catch (e) {
+              console.error("Cache parse error", e);
+          }
+      }
+
       try {
-        // 1. Get Categories
+        // 2. Fetch fresh data from Firebase
         let categoriesRef;
         
-        // Strict adherence to schema: cities/{cityId}/branches/{branchId}/categories
         if (selectedBranch.cityId) {
              categoriesRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`);
         } else {
-             console.error("Missing cityId in selectedBranch for MenuPage");
-             // Attempt fallback
              categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
         }
 
@@ -94,11 +114,8 @@ const MenuPage = () => {
         const categoriesData = await Promise.all(categoriesSnapshot.docs.map(async (categoryDoc) => {
           const categoryData = categoryDoc.data();
           
-          // Skip inactive categories if needed
           if (categoryData.active === false) return null;
 
-          // 2. Get Products for each Category
-          // Schema: cities/{cityId}/branches/{branchId}/categories/{categoryId}/products
           let productsRef;
           
           if (selectedBranch.cityId) {
@@ -110,11 +127,8 @@ const MenuPage = () => {
           const productsSnapshot = await getDocs(productsRef);
           const productsData = productsSnapshot.docs.map(doc => {
             const data = doc.data();
-            // console.log("Raw Product Data:", data); // Debugging
             
-            // Ensure flavors are correctly mapped
             const flavors = data.flavors ? data.flavors.map(f => {
-                // If flavor is a string (legacy data), convert to object
                 if (typeof f === 'string') return { name: f, id: f };
                 return { ...f };
             }) : [];
@@ -124,7 +138,7 @@ const MenuPage = () => {
                 ...data,
                 flavors: flavors
             };
-          }).filter(prod => prod.inStock !== false); // Filter out out-of-stock items if desired, or handle in UI
+          }).filter(prod => prod.inStock !== false);
 
           return {
             id: categoryDoc.id,
@@ -133,8 +147,12 @@ const MenuPage = () => {
           };
         }));
         
-        // Filter out nulls (inactive categories)
-        setCategories(categoriesData.filter(cat => cat !== null));
+        const finalData = categoriesData.filter(cat => cat !== null);
+        
+        // Update state and cache
+        setCategories(finalData);
+        localStorage.setItem(cacheKey, JSON.stringify(finalData));
+        
       } catch (error) {
         console.error("Error fetching menu data:", error);
       } finally {
@@ -145,39 +163,43 @@ const MenuPage = () => {
     fetchMenuData();
   }, []);
 
-  // Initialize refs
-  useEffect(() => {
-    categories.forEach(cat => {
-      categoryRefs.current[cat.id] = React.createRef();
-    });
-  }, [categories]);
+  // Initialize refs - No longer needed with callback refs
+  // useEffect(() => {
+  //   categories.forEach(cat => {
+  //     categoryRefs.current[cat.id] = React.createRef();
+  //   });
+  // }, [categories]);
 
   // Handle initial scroll based on URL param
   useEffect(() => {
     if (loading || categories.length === 0) return;
 
     const catId = searchParams.get("category");
-    if (catId && categoryRefs.current[catId]?.current) {
-      setTimeout(() => {
-        const headerOffset = 180; // Adjust based on header + nav height
-        const element = categoryRefs.current[catId].current;
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-  
+    
+    // Helper function to perform the scroll
+    const performScroll = (targetId, retryCount = 0) => {
+        const element = categoryRefs.current[targetId]; // Access DOM element directly
         const container = document.getElementById('products-container');
-        if (container) {
-            // Calculate position inside the container
-            const containerTop = container.getBoundingClientRect().top;
-            const scrollOffset = elementPosition - containerTop + container.scrollTop - 20; // 20px padding
+        
+        if (element && container) {
+            const elementTop = element.offsetTop;
             
             container.scrollTo({
-                top: scrollOffset,
+                top: elementTop - 20, // 20px padding from top
                 behavior: "smooth"
             });
+            setActiveCategory(targetId);
+        } else if (retryCount < 5) {
+            // Retry if element not found yet (e.g. rendering delay)
+            setTimeout(() => performScroll(targetId, retryCount + 1), 200);
         }
+    };
 
-        setActiveCategory(catId);
-      }, 500); // Increased timeout to ensure render
+    if (catId) {
+      // Use a small timeout to ensure DOM is ready
+      setTimeout(() => {
+        performScroll(catId);
+      }, 100); 
     } else if (categories.length > 0) {
        setActiveCategory(categories[0].id);
     }
@@ -190,7 +212,7 @@ const MenuPage = () => {
       const scrollPosition = container.scrollTop + 200;
 
       for (const cat of categories) {
-        const element = categoryRefs.current[cat.id]?.current;
+        const element = categoryRefs.current[cat.id]; // Access DOM element directly
         if (element) {
           // Since we are inside a scrolling container, we need to use offsetTop relative to the container
           const { offsetTop, offsetHeight } = element;
@@ -211,12 +233,28 @@ const MenuPage = () => {
 
   const scrollToCategory = (catId) => {
     setActiveCategory(catId);
+    
+    // Check if we are already on the menu page with this category
+    const currentCategory = searchParams.get("category");
+    if (currentCategory === catId) {
+        // If already selected, force scroll
+        const element = categoryRefs.current[catId]; // Access DOM element directly
+        if (element) {
+            const container = document.getElementById('products-container');
+            if (container) {
+                const elementPosition = element.offsetTop;
+                container.scrollTo({
+                    top: elementPosition - 20, // 20px padding
+                    behavior: "smooth"
+                });
+            }
+        }
+        return;
+    }
+
     navigate(`/menu?category=${catId}`, { replace: true });
     
-    const element = categoryRefs.current[catId]?.current;
-    if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    // The useEffect listening to [searchParams] will handle the scrolling
   };
 
   const scrollNav = (direction) => {
@@ -357,7 +395,7 @@ const MenuPage = () => {
             <div 
                 key={cat.id} 
                 id={cat.id} 
-                ref={categoryRefs.current[cat.id]}
+                ref={el => categoryRefs.current[cat.id] = el}
                 className="scroll-mt-4"
             >
               <h2 className="text-2xl font-bold mb-6 text-gray-800">{cat.name}</h2>
@@ -481,7 +519,7 @@ const MenuPage = () => {
                     <div className="mb-6">
                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
                             Choose Variation 
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Required</span>
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold">Required</span>
                         </h3>
                         <div className="space-y-3">
                             {selectedProduct.variants.filter(v => v.name).map((variant, index) => (
@@ -535,12 +573,93 @@ const MenuPage = () => {
                     </div>
                 )}
 
+                {/* Flavors Section */}
+                {selectedProduct.flavors && selectedProduct.flavors.length > 0 && selectedProduct.flavors.some(f => f.name) && (
+                    <div className="mb-6">
+                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
+                            Flavors 
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold">Required</span>
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {selectedProduct.flavors.filter(f => f.name).map((flavor, index) => {
+                                const isSelected = selectedAddons['flavor']?.name === flavor.name;
+                                const flavorImg = getFlavorImage(flavor);
+                                return (
+                                <label 
+                                    key={`flav-${flavor.id || index}`}
+                                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                        isSelected
+                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
+                                            : 'border-gray-100 hover:border-gray-200'
+                                    }`}
+                                >
+                                    {flavorImg && (
+                                        <div className="w-16 h-16 mb-2 rounded-full overflow-hidden border border-gray-100 bg-gray-50 relative">
+                                            <img 
+                                                src={flavorImg} 
+                                                alt={flavor.name} 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    // Fallback to placeholder instead of hiding
+                                                    e.target.src = "https://via.placeholder.com/150?text=No+Image";
+                                                    // Only hide if the fallback also fails to prevent infinite loop
+                                                    e.target.onerror = () => {
+                                                        e.target.style.display = 'none';
+                                                    };
+                                                }}
+                                                loading="lazy"
+                                                referrerPolicy="no-referrer"
+                                            />
+                                        </div>
+                                    )}
+                                    <span className={`text-sm text-center ${isSelected ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+                                        {flavor.name}
+                                    </span>
+                                    {flavor.price && Number(flavor.price) > 0 && (
+                                        <span className="text-xs text-[#E25C1D] font-bold mt-1">
+                                            + Rs. {Number(flavor.price).toLocaleString()}
+                                        </span>
+                                    )}
+                                    
+                                    {/* Selection Indicator */}
+                                    {isSelected && (
+                                        <div className="absolute top-2 right-2 w-4 h-4 bg-[#FFC72C] rounded-full flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    )}
+
+                                    <input 
+                                        type="radio" 
+                                        name="flavor_selection"
+                                        className="hidden"
+                                        checked={isSelected}
+                                        onChange={() => {
+                                            const newAddons = { ...selectedAddons };
+                                            newAddons['flavor'] = { 
+                                                id: flavor.id,
+                                                name: flavor.name, 
+                                                imageUrl: flavorImg,
+                                                price: Number(flavor.price || 0), 
+                                                quantity: 1,
+                                                type: 'Flavor'
+                                            };
+                                            setSelectedAddons(newAddons);
+                                        }}
+                                    />
+                                </label>
+                            );})}
+                        </div>
+                    </div>
+                )}
+
                 {/* Addons Section */}
                 {selectedProduct.addons && selectedProduct.addons.length > 0 && selectedProduct.addons.some(a => a.name) && (
                     <div className="mb-6">
                          <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
                             Add Ons 
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Optional</span>
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Optional</span>
                         </h3>
                         <div className="space-y-3">
                             {selectedProduct.addons.filter(a => a.name).map((addon, index) => (
@@ -645,7 +764,7 @@ const MenuPage = () => {
                     <div className="mb-6">
                          <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
                             Beverages 
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Optional</span>
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Optional</span>
                         </h3>
                         <div className="space-y-2">
                             {selectedProduct.Beverages.filter(b => b.name).map((beverage, index) => (
@@ -693,87 +812,6 @@ const MenuPage = () => {
                                     </div>
                                 </label>
                             ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Flavors Section */}
-                {selectedProduct.flavors && selectedProduct.flavors.length > 0 && selectedProduct.flavors.some(f => f.name) && (
-                    <div className="mb-6">
-                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
-                            Flavors 
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Required</span>
-                        </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {selectedProduct.flavors.filter(f => f.name).map((flavor, index) => {
-                                const isSelected = selectedAddons['flavor']?.name === flavor.name;
-                                const flavorImg = getFlavorImage(flavor);
-                                return (
-                                <label 
-                                    key={`flav-${flavor.id || index}`}
-                                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                                        isSelected
-                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
-                                            : 'border-gray-100 hover:border-gray-200'
-                                    }`}
-                                >
-                                    {flavorImg && (
-                                        <div className="w-16 h-16 mb-2 rounded-full overflow-hidden border border-gray-100 bg-gray-50 relative">
-                                            <img 
-                                                src={flavorImg} 
-                                                alt={flavor.name} 
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    // Fallback to placeholder instead of hiding
-                                                    e.target.src = "https://via.placeholder.com/150?text=No+Image";
-                                                    // Only hide if the fallback also fails to prevent infinite loop
-                                                    e.target.onerror = () => {
-                                                        e.target.style.display = 'none';
-                                                    };
-                                                }}
-                                                loading="lazy"
-                                                referrerPolicy="no-referrer"
-                                            />
-                                        </div>
-                                    )}
-                                    <span className={`text-sm text-center ${isSelected ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
-                                        {flavor.name}
-                                    </span>
-                                    {flavor.price && Number(flavor.price) > 0 && (
-                                        <span className="text-xs text-[#E25C1D] font-bold mt-1">
-                                            + Rs. {Number(flavor.price).toLocaleString()}
-                                        </span>
-                                    )}
-                                    
-                                    {/* Selection Indicator */}
-                                    {isSelected && (
-                                        <div className="absolute top-2 right-2 w-4 h-4 bg-[#FFC72C] rounded-full flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    )}
-
-                                    <input 
-                                        type="radio" 
-                                        name="flavor_selection"
-                                        className="hidden"
-                                        checked={isSelected}
-                                        onChange={() => {
-                                            const newAddons = { ...selectedAddons };
-                                            newAddons['flavor'] = { 
-                                                id: flavor.id,
-                                                name: flavor.name, 
-                                                imageUrl: flavorImg,
-                                                price: Number(flavor.price || 0), 
-                                                quantity: 1,
-                                                type: 'Flavor'
-                                            };
-                                            setSelectedAddons(newAddons);
-                                        }}
-                                    />
-                                </label>
-                            );})}
                         </div>
                     </div>
                 )}
