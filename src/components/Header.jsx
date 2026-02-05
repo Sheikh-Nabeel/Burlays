@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaShoppingCart, FaUser, FaPhone, FaMapMarkerAlt, FaTh, FaSearch, FaMapPin, FaSignOutAlt } from "react-icons/fa";
+import { FaShoppingCart, FaUser, FaPhone, FaMapMarkerAlt, FaTh, FaSearch, FaMapPin, FaSignOutAlt, FaBriefcase } from "react-icons/fa";
 import { CgMenuRight, CgShoppingCart, CgProfile } from "react-icons/cg";
 import { useCart } from "../contexts/CartContext";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -259,6 +259,14 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                     >
                       <FaMapPin className="w-5 h-5 text-gray-600" />
                       <span className="font-semibold text-sm text-[#1E1E1E]">Change Branch</span>
+                    </button>
+                    
+                    <button 
+                      className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
+                      onClick={() => { navigate('/careers'); setIsMenuOpen(false); }}
+                    >
+                      <FaBriefcase className="w-5 h-5 text-gray-600" />
+                      <span className="font-semibold text-sm text-[#1E1E1E]">Job Opportunities</span>
                     </button>
                     
                     <div className="h-px bg-gray-100 my-2 mx-6"></div>

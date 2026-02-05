@@ -14,6 +14,7 @@ import PaymentScreen from "./components/PaymentScreen";
 import { Link, useLocation } from "react-router-dom";
 import LoginPage from "./components/LoginPage.jsx";
 import BlogDetail from "./components/BlogDetail";
+import JobOpportunities from "./components/JobOpportunities";
 
 import BranchLocatorPage from "./components/BranchLocatorPage";
 import BranchDetailsPage from "./components/BranchDetailsPage";
@@ -55,6 +56,9 @@ const App = () => {
         {/* Blog Detail */}
         <Route path="/blog/:blogId" element={<BlogDetail />} />
         
+        {/* Job Opportunities */}
+        <Route path="/careers" element={<JobOpportunities />} />
+
         {/* Branch Locator */}
         <Route path="/branches" element={<BranchLocatorPage />} />
         <Route path="/branches/:branchId" element={<BranchDetailsPage />} />
