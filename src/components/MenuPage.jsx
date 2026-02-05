@@ -4,7 +4,7 @@ import { useCart } from "../contexts/CartContext";
 import { FaShoppingCart, FaPlus, FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { auth, db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { toast } from "react-toastify";
 
 const MenuPage = () => {
@@ -16,6 +16,7 @@ const MenuPage = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [selectedAddons, setSelectedAddons] = useState({});
+  const [favorites, setFavorites] = useState([]); // State for favorite product IDs
 
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState([]);
@@ -36,6 +37,68 @@ const MenuPage = () => {
 
   const closeProductModal = () => {
     setSelectedProduct(null);
+  };
+
+  // Fetch favorites on load
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const userRef = doc(db, "Customers", user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            setFavorites(userSnap.data().favorites || []);
+          }
+        } catch (error) {
+          console.error("Error fetching favorites:", error);
+        }
+      } else {
+        setFavorites([]);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const toggleFavorite = async (e, productId) => {
+    e.stopPropagation(); // Prevent opening product modal
+    if (!auth.currentUser) {
+      toast.info("Please login to manage favorites");
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
+    const isFav = favorites.includes(productId);
+    const userRef = doc(db, "Customers", auth.currentUser.uid);
+
+    // Optimistic update
+    if (isFav) {
+      setFavorites(prev => prev.filter(id => id !== productId));
+    } else {
+      setFavorites(prev => [...prev, productId]);
+    }
+
+    try {
+      if (isFav) {
+        await updateDoc(userRef, {
+          favorites: arrayRemove(productId)
+        });
+        toast.success("Removed from favorites");
+      } else {
+        await updateDoc(userRef, {
+          favorites: arrayUnion(productId)
+        });
+        toast.success("Added to favorites");
+      }
+    } catch (error) {
+      console.error("Error updating favorite:", error);
+      // Revert on error
+      if (isFav) {
+         setFavorites(prev => [...prev, productId]);
+      } else {
+         setFavorites(prev => prev.filter(id => id !== productId));
+      }
+      toast.error("Failed to update favorite");
+    }
   };
 
   const handleAddToCart = () => {
@@ -408,8 +471,18 @@ const MenuPage = () => {
                             alt={product.name} 
                             className="w-full h-full object-cover rounded-lg"
                         />
-                        <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-sm hover:text-red-500 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                        <button 
+                            onClick={(e) => toggleFavorite(e, product.id)}
+                            className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-sm hover:text-red-500 transition-colors z-10"
+                        >
+                            <svg 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                fill={favorites.includes(product.id) ? "currentColor" : "none"}
+                                viewBox="0 0 24 24" 
+                                strokeWidth={1.5} 
+                                stroke="currentColor" 
+                                className={`w-5 h-5 ${favorites.includes(product.id) ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
+                            >
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                             </svg>
                         </button>
