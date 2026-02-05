@@ -21,34 +21,45 @@ const JobOpportunities = () => {
   const [cities, setCities] = useState([]);
 
   useEffect(() => {
-    const fetchBranches = async () => {
+    const fetchCitiesAndBranches = async () => {
       try {
-        const querySnapshot = await getDocs(collectionGroup(db, 'branches'));
-        const branchesData = querySnapshot.docs.map(doc => ({
+        // 1. Fetch Cities
+        const citiesSnapshot = await getDocs(collection(db, 'cities'));
+        const citiesData = citiesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
-        setBranches(branchesData);
+        })).filter(city => city.status); // Only active cities
+
+        setCities(citiesData);
+
+        // 2. Fetch Branches for all cities
+        const allBranches = [];
         
-        // Extract unique cities
-        const uniqueCities = [...new Set(branchesData.map(b => {
-             // Try to extract city from location or use a city field if it exists
-             // Assuming location string like "Address, City"
-             if (b.location) {
-                 const parts = b.location.split(',');
-                 return parts.length > 1 ? parts[parts.length - 2].trim() : b.location;
-             }
-             return "Unknown City";
-        }))].filter(Boolean).sort();
+        for (const city of citiesData) {
+            const branchesRef = collection(db, 'cities', city.id, 'branches');
+            const branchesSnapshot = await getDocs(branchesRef);
+            
+            branchesSnapshot.docs.forEach(doc => {
+                const branchData = doc.data();
+                if (branchData.status) { // Only active branches
+                    allBranches.push({
+                        id: doc.id,
+                        cityId: city.id,
+                        cityName: city.name, // Use the city name from the parent doc
+                        ...branchData
+                    });
+                }
+            });
+        }
         
-        setCities(uniqueCities);
+        setBranches(allBranches);
 
       } catch (error) {
-        console.error("Error fetching branches:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    fetchBranches();
+    fetchCitiesAndBranches();
   }, []);
 
   const handleChange = (e) => {
@@ -95,8 +106,8 @@ const JobOpportunities = () => {
 
   // Filter branches based on selected city
   const filteredBranches = formData.city 
-    ? branches.filter(b => (b.location || '').includes(formData.city))
-    : branches;
+    ? branches.filter(b => b.cityName === formData.city)
+    : [];
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -206,12 +217,16 @@ const JobOpportunities = () => {
                         id="city"
                         required
                         value={formData.city}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                            handleChange(e);
+                            // Reset branch when city changes
+                            setFormData(prev => ({ ...prev, city: e.target.value, branch: '' }));
+                        }}
                         className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:ring-[#FFC72C] focus:border-[#FFC72C] bg-white transition-colors"
                     >
                         <option value="">Select City</option>
-                        {cities.map((city, index) => (
-                            <option key={index} value={city}>{city}</option>
+                        {cities.map((city) => (
+                            <option key={city.id} value={city.name}>{city.name}</option>
                         ))}
                     </select>
                 </div>
