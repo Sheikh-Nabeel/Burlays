@@ -465,9 +465,9 @@ const MenuPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {cat.products.map((product) => (
                   <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow h-full">
-                    <div className="relative w-full h-48 mb-4">
+                    <div className="relative w-full aspect-square mb-4">
                         <img 
-                            src={product.imageUrl || product.imagepath || "https://via.placeholder.com/150"} 
+                            src={product.imageUrl || product.imagepath || "https://via.placeholder.com/640"} 
                             alt={product.name} 
                             className="w-full h-full object-cover rounded-lg"
                         />
