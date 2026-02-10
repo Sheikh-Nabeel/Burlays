@@ -124,7 +124,7 @@ const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
 
   return (
     <div className="relative w-full overflow-hidden">
-      <div className="relative aspect-square md:aspect-[3/1] w-full">
+      <div className="relative aspect-[3/1] w-full">
         {slides.map((slide, index) => (
         <div
           key={index}
