@@ -277,7 +277,10 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                   >
                     Blog
                   </button>
-                  <button className="w-full text-left px-6 py-3 text-sm font-medium text-gray-600 hover:text-black transition-colors">
+                  <button 
+                    onClick={() => { navigate('/privacy-policy'); setIsMenuOpen(false); }}
+                    className="w-full text-left px-6 py-3 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                  >
                       Privacy Policy
                     </button>
                   </div>

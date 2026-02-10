@@ -15,6 +15,7 @@ import { Link, useLocation } from "react-router-dom";
 import LoginPage from "./components/LoginPage.jsx";
 import BlogDetail from "./components/BlogDetail";
 import JobOpportunities from "./components/JobOpportunities";
+import PrivacyPolicy from "./components/PrivacyPolicy";
 
 import BranchLocatorPage from "./components/BranchLocatorPage";
 import BranchDetailsPage from "./components/BranchDetailsPage";
@@ -58,6 +59,9 @@ const App = () => {
         
         {/* Job Opportunities */}
         <Route path="/careers" element={<JobOpportunities />} />
+
+        {/* Privacy Policy */}
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
         {/* Branch Locator */}
         <Route path="/branches" element={<BranchLocatorPage />} />
