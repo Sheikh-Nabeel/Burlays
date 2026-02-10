@@ -528,9 +528,9 @@ const MenuPage = () => {
                             
                             <button 
                                 onClick={() => openProductModal(product)}
-                                className="w-full bg-white text-black font-bold  py-0.5 md:py-2.5 px-4 md:px-0 rounded-lg hover:bg-[#FFC72C] hover:border-[#FFC72C] transition-colors border border-gray-200 flex items-center justify-center gap-2 shadow-sm text-sm tracking-wide"
+                                className="w-full bg-white text-black font-bold py-2 md:py-2.5 px-2 md:px-0 rounded-lg hover:bg-[#FFC72C] hover:border-[#FFC72C] transition-colors border border-gray-200 flex items-center justify-center gap-1.5 md:gap-2 shadow-sm text-[10px] sm:text-xs md:text-sm tracking-wide whitespace-nowrap"
                             >
-                                <FaPlus className="w-2.5 h-2.5" />
+                                <FaPlus className="w-2 h-2 md:w-2.5 md:h-2.5" />
                                 ADD TO CART
                             </button>
                         </div>
