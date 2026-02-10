@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
-const highlights = [
+const defaultHighlights = [
   {
     id: 1,
     image: "https://images.unsplash.com/photo-1617347454431-f49d7ff5c3b1?w=500&auto=format&fit=crop&q=60",
@@ -25,6 +27,39 @@ const highlights = [
 ];
 
 const BrandHighlights = () => {
+  const [highlights, setHighlights] = useState(defaultHighlights);
+
+  useEffect(() => {
+    const fetchHighlights = async () => {
+      try {
+        const selectedBranch = JSON.parse(localStorage.getItem('selectedBranch'));
+        if (!selectedBranch) return;
+
+        const branchRef = doc(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}`);
+        const branchSnap = await getDoc(branchRef);
+
+        if (branchSnap.exists()) {
+          const data = branchSnap.data();
+          if (data.features && Array.isArray(data.features) && data.features.length > 0) {
+            const mappedFeatures = data.features.map((feature, index) => ({
+              id: index,
+              image: feature.image_path || "https://via.placeholder.com/500", 
+              title: feature.title || "",
+              description: "" 
+            }));
+            setHighlights(mappedFeatures);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching brand highlights:", error);
+      }
+    };
+
+    fetchHighlights();
+  }, []);
+
+  if (highlights.length === 0) return null;
+
   return (
     <div className="bg-white py-16">
       <div className="max-w-7xl mx-auto px-4">
@@ -34,7 +69,7 @@ const BrandHighlights = () => {
               <div className="rounded-2xl overflow-hidden aspect-square bg-gray-100 relative">
                 <img 
                   src={item.image} 
-                  onError={(e) => {e.target.src = item.fallbackImage}}
+                  onError={(e) => {e.target.src = item.fallbackImage || "https://via.placeholder.com/500"}}
                   alt={item.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
