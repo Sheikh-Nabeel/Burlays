@@ -31,7 +31,7 @@ const App = () => {
   const [showBranchSelection, setShowBranchSelection] = React.useState(true);
 
   const location = useLocation();
-  const hideFloatingButtonPaths = ['/login', '/cart', '/PaymentScreen', '/branches'];
+  const hideFloatingButtonPaths = ['/login', '/cart', '/PaymentScreen', '/branches', '/menu'];
   const shouldHideFloatingButton = hideFloatingButtonPaths.some(path => location.pathname.startsWith(path));
   const isLoginPage = location.pathname === '/login';
 
