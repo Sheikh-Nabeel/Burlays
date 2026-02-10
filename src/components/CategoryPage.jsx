@@ -60,21 +60,20 @@ const CategoryPage = () => {
     setProducts(prods);
   }, [categoryId, selectedSub]);
 
-  const isPakistan = location?.countryCode === "PK";
-
   return (
     <>
       <div className="min-h-screen bg-white text-darkSecondary p-">
         {/* Back Button */}
 
         {/* Banner */}
-        <div className="relative w-full h-64 mb-6 overflow-hidden">
+        <div className="relative w-full aspect-square mb-6 overflow-hidden">
           <img
             src={
               categoryData?.imageUrl || "https://via.placeholder.com/1200x300"
             }
             alt={categoryData?.categoryName || categoryId}
             className="w-full h-full object-cover"
+            style={{ objectPosition: 'center' }}
           />
           <div className="absolute inset-0 bg-black/40"></div>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -102,8 +101,8 @@ const CategoryPage = () => {
         {/* Products */}
         <div className="grid grid-cols-2 px-3 md:grid-cols-4 gap-3 md:gap-6">
           {products.map((prod) => {
-            const price = isPakistan ? prod.price_pk : prod.price_uk;
-            const currency = isPakistan ? "PKR" : "£";
+            const price = prod.price_pk;
+            const currency = "Rs.";
             const isInCart = cartItems.some((item) => item.id === prod.id);
 
             return (

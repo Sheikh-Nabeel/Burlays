@@ -20,35 +20,34 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
   // Check auth and prefill phone and address
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
-        if (!user) {
-            navigate('/login', { state: { from: routerLocation } });
-        } else {
-            setPhone(user.phoneNumber || "");
-            
-            try {
-                // Fetch saved address from Customers collection
-                const userRef = doc(db, "Customers", user.uid);
-                const userSnap = await getDoc(userRef);
-                if (userSnap.exists()) {
-                    const userData = userSnap.data();
-                    if (userData.address) {
-                        setAddress(userData.address);
-                    }
-                    // Also prefer phone from profile if available (might be different from auth phone?)
-                    if (userData.phone) {
-                        setPhone(userData.phone);
-                    }
+      if (!user) {
+        navigate('/login', { state: { from: routerLocation } });
+      } else {
+        setPhone(user.phoneNumber || "");
+        
+        try {
+            // Fetch saved address from Customers collection
+            const userRef = doc(db, "Customers", user.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                if (userData.address) {
+                    setAddress(userData.address);
                 }
-            } catch (error) {
-                console.error("Error fetching user details:", error);
+                // Also prefer phone from profile if available (might be different from auth phone?)
+                if (userData.phone) {
+                    setPhone(userData.phone);
+                }
             }
+        } catch (error) {
+            console.error("Error fetching user details:", error);
         }
+      }
     });
     return () => unsubscribe();
   }, [navigate, routerLocation]);
 
-  const isPakistan = location?.countryCode === "PK";
-  const currencySymbol = isPakistan ? "Rs." : "£";
+  const currencySymbol = "Rs.";
   
   // Get selected branch from localStorage to access GST
   const selectedBranch = JSON.parse(localStorage.getItem('selectedBranch') || '{}');

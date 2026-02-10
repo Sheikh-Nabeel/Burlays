@@ -5,13 +5,9 @@ const ProductCard = ({ product, onAddToCart }) => {
   const { location } = useLocation()
   const [isHovered, setIsHovered] = useState(false)
   
-  const price = (location.countryCode === 'GB' || location.countryCode === 'UK')
-    ? product.price_uk
-    : product.price_pk
+  const price = product.price_pk
   
-  const currency = (location.countryCode === 'GB' || location.countryCode === 'UK')
-    ? '£'
-    : 'Rs.'
+  const currency = 'Rs.'
   
   const parseColor = (colorString) => {
     if (!colorString) return '#888888'

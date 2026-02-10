@@ -67,7 +67,7 @@ const BlogSection = () => {
         {/* Blog Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {blogs.map((blog) => (
-            <Link to={`/blog/${blog.id}`} state={{ blog }} key={blog.id} className="group cursor-pointer relative overflow-hidden rounded-xl aspect-square">
+            <Link to={`/blog/${blog.id}`} state={{ blog }} key={blog.id} className="group cursor-pointer relative overflow-hidden rounded-xl aspect-square w-full">
               {/* Background Image */}
               <img 
                 src={blog.image} 

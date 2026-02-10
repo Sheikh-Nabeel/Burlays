@@ -123,8 +123,9 @@ const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   }, [slides.length]);
 
   return (
-    <div className="relative h-[40vh] md:h-[60vh]">
-      {slides.map((slide, index) => (
+    <div className="relative w-full overflow-hidden">
+      <div className="relative aspect-square md:aspect-[3/1] w-full">
+        {slides.map((slide, index) => (
         <div
           key={index}
           className={`absolute inset-0 transition-opacity duration-1000 ${
@@ -148,6 +149,7 @@ const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
             onClick={() => setCurrentSlide(index)}
           />
         ))}
+      </div>
       </div>
     </div>
   );

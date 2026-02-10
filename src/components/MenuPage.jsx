@@ -22,8 +22,14 @@ const MenuPage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef(null);
+  const activeCategoryRef = useRef(""); // Ref to track active category without re-renders
   
   const categoryRefs = useRef({});
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    activeCategoryRef.current = activeCategory;
+  }, [activeCategory]);
 
   // Fetch categories and products from Firebase
 
@@ -272,16 +278,35 @@ const MenuPage = () => {
     const handleScroll = () => {
       const container = document.getElementById('products-container');
       if (!container) return;
-      const scrollPosition = container.scrollTop + 200;
+      
+      // Add a small buffer to the scroll position detection
+      const scrollPosition = container.scrollTop + 220; // Increased offset slightly
 
       for (const cat of categories) {
-        const element = categoryRefs.current[cat.id]; // Access DOM element directly
+        const element = categoryRefs.current[cat.id];
         if (element) {
-          // Since we are inside a scrolling container, we need to use offsetTop relative to the container
           const { offsetTop, offsetHeight } = element;
+          
           if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
-            setActiveCategory(cat.id);
-            break;
+            // Only update if category changed to prevent constant re-renders and scroll jitter
+            if (activeCategoryRef.current !== cat.id) {
+                activeCategoryRef.current = cat.id; // Immediate update to prevent race conditions
+                setActiveCategory(cat.id);
+                
+                // Scroll the category nav to center the active item
+                const navContainer = scrollRef.current;
+                if (navContainer) {
+                    const activeBtn = navContainer.querySelector(`[data-category-id="${cat.id}"]`);
+                    
+                    if (activeBtn) {
+                        // Calculate center position
+                        // Note: Ensure navContainer has 'relative' class for correct offsetLeft
+                        const scrollLeft = activeBtn.offsetLeft - (navContainer.clientWidth / 2) + (activeBtn.clientWidth / 2);
+                        navContainer.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                    }
+                }
+            }
+            break; 
           }
         }
       }
@@ -369,15 +394,15 @@ const MenuPage = () => {
       }
 
       return (
-          <div className="flex flex-col items-start">
-             {hasDiscount && (
-                 <span className="text-xs text-gray-400 line-through decoration-red-500 decoration-2">
-                     Rs. {originalPrice.toLocaleString()}
-                 </span>
-             )}
-             <span className="text-[#E25C1D] font-bold text-lg">
+          <div className="flex items-center gap-2 mt-2">
+             <span className="text-[#E25C1D] font-bold text-sm">
                  Rs. {priceDisplay.toLocaleString()}
              </span>
+             {hasDiscount && (
+                 <span className="px-2 py-0.5 bg-[#E25C1D] text-white text-[9px] font-bold rounded-full">
+                     Starting Price
+                 </span>
+             )}
           </div>
       );
   };
@@ -417,17 +442,18 @@ const MenuPage = () => {
 
             <div 
                 ref={scrollRef}
-                className="flex overflow-x-auto gap-3 scrollbar-hide px-8"
+                className="relative flex overflow-x-auto gap-3 scrollbar-hide px-8"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {filteredCategories.map((cat) => (
                 <button
                     key={cat.id}
+                    data-category-id={cat.id}
                     onClick={() => scrollToCategory(cat.id)}
-                    className={`whitespace-nowrap px-6 py-2 rounded-lg text-sm font-bold transition-all ${
+                    className={`whitespace-nowrap px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${
                     activeCategory === cat.id
-                        ? "bg-[#FFC72C] text-black shadow-md transform scale-105"
-                        : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                        ? "bg-[#FFC72C] text-black shadow-md transform scale-105 border border-[#FFC72C]"
+                        : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
                     }`}
                 >
                     {cat.name}
@@ -462,47 +488,50 @@ const MenuPage = () => {
                 className="scroll-mt-4"
             >
               <h2 className="text-2xl font-bold mb-6 text-gray-800">{cat.name}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-4">
                 {cat.products.map((product) => (
-                  <div key={product.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow h-full">
-                    <div className="relative w-full aspect-square mb-4">
+                  <div key={product.id} className="bg-white p-3 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50 flex flex-col items-center text-center hover:shadow-lg transition-all duration-300 h-full relative group">
+                    {/* Favorite Button - Top Right */}
+                    <button 
+                        onClick={(e) => toggleFavorite(e, product.id)}
+                        className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-white/80 backdrop-blur-sm text-gray-400 hover:text-red-500 transition-colors shadow-sm"
+                    >
+                        {favorites.includes(product.id) ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-red-500">
+                                <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+                            </svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-[#E25C1D]">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                            </svg>
+                        )}
+                    </button>
+
+                    <div className="relative w-full aspect-square mb-2 overflow-hidden rounded-2xl bg-white">
                         <img 
                             src={product.imageUrl || product.imagepath || "https://via.placeholder.com/640"} 
                             alt={product.name} 
-                            className="w-full h-full object-cover rounded-lg"
+                            className="w-full h-full object-contain hover:scale-105 transition-transform duration-500"
                         />
-                        <button 
-                            onClick={(e) => toggleFavorite(e, product.id)}
-                            className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-sm hover:text-red-500 transition-colors z-10"
-                        >
-                            <svg 
-                                xmlns="http://www.w3.org/2000/svg" 
-                                fill={favorites.includes(product.id) ? "currentColor" : "none"}
-                                viewBox="0 0 24 24" 
-                                strokeWidth={1.5} 
-                                stroke="currentColor" 
-                                className={`w-5 h-5 ${favorites.includes(product.id) ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-                            </svg>
-                        </button>
                     </div>
                     
-                    <div className="flex-1 flex flex-col">
-                        <h3 className="text-lg font-bold text-gray-800 mb-2">{product.name}</h3>
-                        {product.description && <p className="text-sm text-gray-500 line-clamp-2 mb-4 flex-1">{product.description}</p>}
+                    <div className="flex-1 flex flex-col items-center w-full px-1">
+                        <h3 className="text-xl font-serif font-bold text-gray-900 mb-1 leading-tight">{product.name}</h3>
+                        {product.description && (
+                            <p className="text-xs text-gray-500 line-clamp-2 mb-3 font-medium leading-relaxed">
+                                {product.description}
+                            </p>
+                        )}
                         
-                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                            <div className="flex flex-col">
-                                <span className="text-xs text-gray-500 font-medium">Starting Price</span>
-                                {getProductPrice(product)}
-                            </div>
+                        <div className="mt-auto w-full flex flex-col items-center gap-3">
+                            {getProductPrice(product)}
+                            
                             <button 
                                 onClick={() => openProductModal(product)}
-                                className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-sm font-bold transition-colors border border-gray-200"
+                                className="w-full bg-white text-black font-bold py-2.5 rounded-2xl hover:bg-gray-50 transition-colors border border-gray-200 flex items-center justify-center gap-2 shadow-sm text-sm tracking-wide"
                             >
-                                <FaPlus className="w-3 h-3 text-[#FFC72C]" />
-                                ADD
+                                <FaPlus className="w-2.5 h-2.5" />
+                                ADD TO CART
                             </button>
                         </div>
                     </div>

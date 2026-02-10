@@ -106,11 +106,11 @@ const CategoriesGrid = () => {
           </button>
         </div>
 
-        <div className="relative group">
+        <div className="relative group flex items-center justify-center gap-2">
           {/* Left Arrow */}
           <button
             onClick={() => scroll("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-10 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-gray-600 hover:text-[#FFC72C] transition-colors opacity-0 group-hover:opacity-100 duration-300 border border-gray-100"
+            className="z-10 w-10 h-10 bg-white shadow-lg rounded-xl flex-shrink-0 flex items-center justify-center text-gray-600 hover:text-[#FFC72C] transition-colors border border-gray-100"
           >
             <FaChevronLeft className="w-4 h-4" />
           </button>
@@ -118,24 +118,24 @@ const CategoriesGrid = () => {
           {/* Slider Container */}
           <div 
             ref={scrollRef}
-            className="flex overflow-x-auto gap-6 pb-8 scrollbar-hide scroll-smooth"
+            className="flex overflow-x-auto gap-4 md:gap-6 py-4 scrollbar-hide scroll-smooth snap-x snap-mandatory px-4 max-w-[280px] md:max-w-full"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {categories.map((cat) => (
               <div
                 key={cat.id}
                 onClick={() => handleCategoryClick(cat.id)}
-                className="flex-shrink-0 w-64 md:w-72 cursor-pointer group/card"
+                className="flex-shrink-0 w-60 md:w-72 cursor-pointer group/card snap-center"
               >
-                <div className="bg-white rounded-xl border border-transparent group-hover/card:border-[#FFC72C] transition-all duration-300 p-4 h-full flex flex-col items-center shadow-sm hover:shadow-md">
-                  <div className="w-48 h-48 mb-4 rounded-full overflow-hidden">
+                <div className="bg-white rounded-xl border border-gray-200 group-hover/card:border-[#FFC72C] transition-all duration-300 p-4 h-full flex flex-col items-center shadow-sm hover:shadow-md">
+                  <div className="w-full aspect-square mb-4 rounded-xl overflow-hidden bg-white">
                     <img
                       src={cat.imageUrl || "https://via.placeholder.com/150"}
                       alt={cat.name}
-                      className="w-full h-full object-cover transform group-hover/card:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-contain transform group-hover/card:scale-105 transition-transform duration-500"
                     />
                   </div>
-                  <h3 className="text-darkSecondary font-bold text-lg uppercase tracking-wide text-center mt-auto">
+                  <h3 className="text-darkSecondary font-bold text-sm md:text-lg uppercase tracking-wide text-center mt-auto">
                     {cat.name}
                   </h3>
                 </div>
@@ -146,7 +146,7 @@ const CategoriesGrid = () => {
           {/* Right Arrow */}
           <button
             onClick={() => scroll("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-10 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center text-gray-600 hover:text-[#FFC72C] transition-colors opacity-0 group-hover:opacity-100 duration-300 border border-gray-100"
+            className="z-10 w-10 h-10 bg-white shadow-lg rounded-xl flex-shrink-0 flex items-center justify-center text-gray-600 hover:text-[#FFC72C] transition-colors border border-gray-100"
           >
             <FaChevronRight className="w-4 h-4" />
           </button>

@@ -150,7 +150,7 @@ const BranchesSection = () => {
                 </div>
 
                 {/* Branch Image */}
-                <div className="h-64 w-full">
+                <div className="w-full aspect-square">
                     <img 
                     src={selectedBranch.image} 
                     alt={selectedBranch.name} 

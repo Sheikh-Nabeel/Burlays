@@ -27,8 +27,7 @@ const CartScreen = () => {
   const navigate = useNavigate();
   const [gstPercentage, setGstPercentage] = useState(0);
 
-  const isPakistan = location?.countryCode === "PK";
-  const currencySymbol = isPakistan ? "Rs." : "£";
+  const currencySymbol = "Rs.";
 
   const total = getTotalPrice();
 
@@ -83,7 +82,7 @@ const CartScreen = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
+    <div className="min-h-screen bg-gray-50 pb-48">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -195,9 +194,8 @@ const CartScreen = () => {
                             <button
                                 onClick={() => updateQuantity(item.uniqueId || item.id, item.quantity - 1)}
                                 className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-black font-bold disabled:opacity-50"
-                                disabled={item.quantity <= 1}
                             >
-                                −
+                                {item.quantity <= 1 ? <FaTrash size={10} /> : "−"}
                             </button>
                             <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
                             <button
@@ -228,7 +226,7 @@ const CartScreen = () => {
 
       {/* Bottom Action Bar */}
       {cartItems.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <div className="max-w-3xl mx-auto">
                 <div className="flex flex-col gap-1 mb-4">
                     <div className="flex justify-between items-center text-gray-600 text-sm">

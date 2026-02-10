@@ -103,7 +103,7 @@ const BlogDetail = () => {
         </div>
 
         {/* Featured Image */}
-        <div className="w-full aspect-video rounded-2xl overflow-hidden mb-12">
+        <div className="w-full aspect-square rounded-2xl overflow-hidden mb-12">
             <img 
                 src={blog.image || blog.coverImage} 
                 onError={(e) => {e.target.src = blog.fallbackImage || "https://via.placeholder.com/800x400?text=No+Image"}}
