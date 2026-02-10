@@ -490,7 +490,7 @@ const MenuPage = () => {
               <h2 className="text-2xl font-bold mb-6 text-gray-800">{cat.name}</h2>
               <div className="grid grid-cols-2 gap-4">
                 {cat.products.map((product) => (
-                  <div key={product.id} className="bg-white p-3 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50 flex flex-col items-center text-center hover:shadow-lg transition-all duration-300 h-full relative group">
+                  <div key={product.id} className="bg-white p-3 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50 flex flex-col items-center text-center hover:shadow-lg transition-all duration-300 h-full relative group">
                     {/* Favorite Button - Top Right */}
                     <button 
                         onClick={(e) => toggleFavorite(e, product.id)}
@@ -528,7 +528,7 @@ const MenuPage = () => {
                             
                             <button 
                                 onClick={() => openProductModal(product)}
-                                className="w-full bg-white text-black font-bold py-2.5 rounded-2xl hover:bg-gray-50 transition-colors border border-gray-200 flex items-center justify-center gap-2 shadow-sm text-sm tracking-wide"
+                                className="w-full bg-white text-black font-bold  py-0.5 md:py-2.5 px-4 md:px-0 rounded-lg hover:bg-[#FFC72C] hover:border-[#FFC72C] transition-colors border border-gray-200 flex items-center justify-center gap-2 shadow-sm text-sm tracking-wide"
                             >
                                 <FaPlus className="w-2.5 h-2.5" />
                                 ADD TO CART
