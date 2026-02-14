@@ -143,6 +143,27 @@ const MenuPage = () => {
     }
   };
 
+  const handleDealNextStep = () => {
+    // Save current progress
+    const nextIndex = activeSubProductIndex + 1;
+    if (nextIndex < selectedProduct.products.length) {
+        // Move to next product
+        const nextProd = selectedProduct.products[nextIndex];
+        setActiveSubProduct(nextProd);
+        setActiveSubProductIndex(nextIndex);
+        
+        // Restore selection if exists
+        const saved = selectedDealProducts[nextIndex] || {};
+        setSelectedVariants(saved.variant || {});
+        setSelectedAddons(saved.addons || {});
+    }
+  };
+
+  const isCurrentStepValid = () => {
+    if (!selectedProduct.isDeal || !activeSubProduct) return true;
+    return isProductReady(activeSubProduct, selectedDealProducts[activeSubProductIndex]);
+  };
+
   const handleAddToCart = () => {
     if (!auth.currentUser) {
         toast.info("Please login to add items to cart");
@@ -1224,6 +1245,18 @@ const MenuPage = () => {
 
             {/* Footer Actions */}
             <div className="p-4 border-t border-gray-100 bg-white">
+                {selectedProduct.isDeal && activeSubProductIndex < selectedProduct.products.length - 1 ? (
+                    <button 
+                        onClick={handleDealNextStep}
+                        disabled={!isCurrentStepValid()}
+                        className="w-full bg-black text-white font-bold py-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
+                    >
+                        <span>Next Item</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                    </button>
+                ) : (
                 <button 
                     onClick={handleAddToCart}
                     disabled={(() => {
@@ -1283,6 +1316,7 @@ const MenuPage = () => {
                         })()}
                     </span>
                 </button>
+                )}
             </div>
           </motion.div>
         </div>
