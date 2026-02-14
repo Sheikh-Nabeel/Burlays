@@ -142,9 +142,9 @@ const BranchSelection = ({ onSelectBranch, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden mx-4 animate-fadeIn">
+      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden mx-4 animate-scaleIn">
         
         {/* Close Button */}
         <button 

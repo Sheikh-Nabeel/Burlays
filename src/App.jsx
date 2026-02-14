@@ -38,13 +38,16 @@ const App = () => {
   return (
     <div className="bg-white text-darkSecondary font-serif relative">
       <ToastContainer position="top-right" autoClose={2000} />
+      {!isLoginPage && <Header />}
+      
+      {/* Branch Selection Overlay */}
       {!selectedBranch && showBranchSelection && (
         <BranchSelection 
           onSelectBranch={setSelectedBranch} 
           onClose={() => setShowBranchSelection(false)} 
         />
       )}
-      {!isLoginPage && <Header />}
+
       <Routes key={selectedBranch ? selectedBranch.id : 'no-branch'}>
         <Route path="/" element={<Home />} />
         <Route path="/cart" element={<CartPage />} />

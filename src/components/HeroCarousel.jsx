@@ -5,113 +5,73 @@ import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const [slides, setSlides] = useState(() => {
-    const savedBranch = localStorage.getItem('selectedBranch');
-    if (savedBranch) {
-      try {
-        const branch = JSON.parse(savedBranch);
-        if (branch.banners && Array.isArray(branch.banners) && branch.banners.length > 0) {
-          return branch.banners.map(url => ({
-            image: url,
-            title: "",
-            subtitle: "",
-            description: ""
-          }));
-        }
-      } catch (e) {
-        console.error("Error parsing selectedBranch", e);
-      }
-    }
-    // Default slides
-    return [
-      {
-        image: "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=1200",
-        title: "Artisan Bakery",
-        subtitle: "Fresh baked goods daily",
-        description: "Experience the finest baked goods made with traditional recipes and premium ingredients.",
-      },
-      {
-        image: "https://www.sweeco.lv/files/1338282/catitems/4compl-49af6e8b717ea744d11b5f37d5a9b799.jpg",
-        title: "Gourmet Delights",
-        subtitle: "Crafted with passion",
-        description: "From classic breads to innovative pastries, taste the difference quality makes.",
-      },
-      {
-        image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200",
-        title: "Family Tradition",
-        subtitle: "Since generations",
-        description: "Bringing you authentic flavors passed down through generations of master bakers.",
-      },
-    ];
-  });
+  const [slides, setSlides] = useState([]); // Start empty, will fill from effect
 
-  // Effect to fetch fresh banners if they are missing but we have a branch ID
   useEffect(() => {
     const fetchBannersIfNeeded = async () => {
+      // 1. Check if we have a selected branch
       const savedBranch = localStorage.getItem('selectedBranch');
-      if (!savedBranch) return;
-
-      let branch = null;
-      try {
-        branch = JSON.parse(savedBranch);
-      } catch (e) {
-        return;
+      
+      if (savedBranch) {
+          try {
+              const branch = JSON.parse(savedBranch);
+              // If branch has banners, we are good (already set in initial state)
+              if (branch.banners && Array.isArray(branch.banners) && branch.banners.length > 0) {
+                  const bannerSlides = branch.banners.map(url => ({ image: url }));
+                  setSlides(bannerSlides);
+                  return;
+              }
+              
+              // If branch has no banners, try to fetch fresh data for this branch
+              if (branch.id && branch.cityId) {
+                  const docRef = doc(db, 'cities', branch.cityId, 'branches', branch.id);
+                  const snap = await getDoc(docRef);
+                  if (snap.exists()) {
+                      const data = snap.data();
+                      if (data.banners && data.banners.length > 0) {
+                          const bannerSlides = data.banners.map(url => ({ image: url }));
+                          setSlides(bannerSlides);
+                          // Update local storage
+                          localStorage.setItem('selectedBranch', JSON.stringify({ ...branch, banners: data.banners }));
+                          return;
+                      }
+                  }
+              }
+          } catch (e) {
+              console.error("Error parsing saved branch", e);
+          }
       }
 
-      // If we already have banners, no need to fetch
-      if (branch.banners && Array.isArray(branch.banners) && branch.banners.length > 0) return;
+      // 2. Fallback: If no branch selected OR selected branch has no banners
+      // Fetch ANY branch that has banners to avoid showing static placeholder images
+      try {
+          // Get all cities
+          const citiesSnap = await getDocs(collection(db, 'cities'));
+          
+          for (const cityDoc of citiesSnap.docs) {
+              // Get branches for this city
+              const branchesSnap = await getDocs(collection(db, `cities/${cityDoc.id}/branches`));
+              
+              // Find first branch with banners
+              const branchWithBanners = branchesSnap.docs.find(doc => {
+                  const data = doc.data();
+                  return data.banners && Array.isArray(data.banners) && data.banners.length > 0;
+              });
 
-      // If we have an ID, try to find the fresh document
-      if (branch.id) {
-        try {
-          let branchDoc = null;
-
-          // If we have cityId (from new logic), try that first
-          if (branch.cityId) {
-            const docRef = doc(db, 'cities', branch.cityId, 'branches', branch.id);
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-              branchDoc = snap.data();
-            }
-          }
-
-          // If not found yet (stale data or missing cityId), search all cities
-          if (!branchDoc) {
-            const citiesSnap = await getDocs(collection(db, 'cities'));
-            for (const cityDoc of citiesSnap.docs) {
-              const possibleRef = doc(db, 'cities', cityDoc.id, 'branches', branch.id);
-              const snap = await getDoc(possibleRef);
-              if (snap.exists()) {
-                branchDoc = snap.data();
-                // Found it! Update local branch object with cityId for future
-                branch.cityId = cityDoc.id; 
-                break;
+              if (branchWithBanners) {
+                  const data = branchWithBanners.data();
+                  const bannerSlides = data.banners.map(url => ({ image: url }));
+                  setSlides(bannerSlides);
+                  return; // Found one, exit
               }
-            }
           }
-
-          if (branchDoc && branchDoc.banners && Array.isArray(branchDoc.banners) && branchDoc.banners.length > 0) {
-            // Update slides state
-            const bannerSlides = branchDoc.banners.map(url => ({
-              image: url,
-              title: "",
-              subtitle: "",
-              description: ""
-            }));
-            setSlides(bannerSlides);
-
-            // Update localStorage so we don't fetch next time
-            const updatedBranch = { ...branch, ...branchDoc };
-            localStorage.setItem('selectedBranch', JSON.stringify(updatedBranch));
-          }
-        } catch (error) {
-          console.error("Error fetching fresh branch banners:", error);
-        }
+      } catch (error) {
+          console.error("Error fetching fallback banners:", error);
       }
     };
 
     fetchBannersIfNeeded();
-  }, []); // Run once on mount
+  }, []);
 
 
   useEffect(() => {
@@ -124,32 +84,41 @@ const HeroCarousel = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
 
   return (
     <div className="relative w-full overflow-hidden">
-      <div className="relative aspect-[3/1] w-full">
-        {slides.map((slide, index) => (
-        <div
-          key={index}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            index === currentSlide ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <img
-            src={slide.image}
-            alt={slide.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      ))}
+      <div className="relative aspect-[3/1] w-full bg-gray-100">
+        {slides.length > 0 ? (
+          slides.map((slide, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                index === currentSlide ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <img
+                src={slide.image}
+                alt={slide.title || "Banner"}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ))
+        ) : (
+          // Placeholder or Loading State
+          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+             <span className="text-gray-400">Loading Banners...</span>
+          </div>
+        )}
 
-      {/* Slide Indicators */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            className={`w-3 h-3 rounded-full transition-colors ${index === currentSlide ? "bg-[#FFC72C]" : "bg-white bg-opacity-50"}`}
-            onClick={() => setCurrentSlide(index)}
-          />
-        ))}
-      </div>
+      {/* Slide Indicators - Only show if we have multiple slides */}
+      {slides.length > 1 && (
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              className={`w-3 h-3 rounded-full transition-colors ${index === currentSlide ? "bg-[#FFC72C]" : "bg-white bg-opacity-50"}`}
+              onClick={() => setCurrentSlide(index)}
+            />
+          ))}
+        </div>
+      )}
       </div>
     </div>
   );
