@@ -21,42 +21,55 @@ const CategoriesGrid = () => {
       }
 
       try {
-        // Construct the path based on the user's specific database structure
-        // cities/{cityId}/branches/{branchId}/categories
-        
-        // We need to know the cityId. 
-        // 1. Check if it's already in the branch object (if we stored it during selection)
-        // 2. If not, we might need to query or find it.
-        
         let categoriesRef;
+        let dealsRef;
         
         // Use the new nested structure: cities/{cityId}/branches/{branchId}/categories
         if (selectedBranch.cityId) {
              categoriesRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`);
+             dealsRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/deals`);
         } else {
-             // Fallback for legacy data or direct branch access without city context
-             // Try to find the cityId from the branch document if possible, or assume a global structure (which we know is incorrect now but kept for safety)
-             // Given the strict schema provided, it MUST be nested.
+             // Fallback
              console.warn("Missing cityId in selectedBranch, attempting to use provided schema path structure.");
-             if (selectedBranch.cityId) {
-                categoriesRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`);
-             } else {
-                 // If we really don't have cityId, we can't construct the path. 
-                 // However, the selectedBranch object SHOULD have cityId if it came from BranchSelection.
-                 console.error("Critical Error: cityId missing from selectedBranch object", selectedBranch);
-                 // Attempt global fallback just in case, but likely will fail or return nothing if collection doesn't exist
-                 categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
-             }
+             categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
+             dealsRef = collection(db, `branches/${selectedBranch.id}/deals`);
         }
 
-        const querySnapshot = await getDocs(categoriesRef);
-        
-        const categoriesData = querySnapshot.docs.map(doc => ({
+        const [categoriesSnapshot, dealsSnapshot] = await Promise.all([
+             getDocs(categoriesRef),
+             getDocs(dealsRef)
+        ]);
+
+        // Process Deals
+        const deals = dealsSnapshot.docs.map(doc => {
+             const data = doc.data();
+             if (data.endDate) {
+                 const end = data.endDate.toDate ? data.endDate.toDate() : new Date(data.endDate);
+                 if (end < new Date()) return null;
+             }
+             if (!data.isActive) return null;
+             return { id: doc.id, ...data };
+        }).filter(Boolean);
+
+        const categoriesData = categoriesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })).filter(cat => cat.active !== false); // Filter out inactive categories if 'active' field exists
+        })).filter(cat => cat.active !== false);
         
-        setCategories(categoriesData);
+        let finalData = categoriesData;
+        
+        // Prepend Deals as a category if available
+        if (deals.length > 0) {
+            const dealsCategory = {
+                id: 'deals-category',
+                name: 'Deals',
+                imageUrl: 'https://cdn-icons-png.flaticon.com/512/662/662846.png', // Generic deal icon or use specific image
+                isDealCategory: true
+            };
+            finalData = [dealsCategory, ...categoriesData];
+        }
+
+        setCategories(finalData);
       } catch (error) {
         console.error("Error fetching categories:", error);
       } finally {
@@ -68,7 +81,12 @@ const CategoriesGrid = () => {
   }, []);
 
   const handleCategoryClick = (catId) => {
-    navigate(`/menu?category=${catId}`);
+    if (catId === 'deals-category') {
+        // Scroll to deals or just navigate to menu with deals selected (which is default logic)
+        navigate(`/menu?category=deals-category`);
+    } else {
+        navigate(`/menu?category=${catId}`);
+    }
   };
 
   const scroll = (direction) => {

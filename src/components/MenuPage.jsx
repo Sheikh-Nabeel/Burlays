@@ -16,6 +16,7 @@ const MenuPage = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [selectedAddons, setSelectedAddons] = useState({});
+  const [activeSubProduct, setActiveSubProduct] = useState(null); // For deals with multiple product choices
   const [favorites, setFavorites] = useState([]); // State for favorite product IDs
 
   const [activeCategory, setActiveCategory] = useState("");
@@ -39,6 +40,17 @@ const MenuPage = () => {
     setSelectedProduct(product);
     setSelectedVariants({});
     setSelectedAddons({});
+    
+    // For deals, auto-select the first product if it's the only one, or strictly reset if multiple
+    if (product.isDeal && product.products && product.products.length > 0) {
+        if (product.products.length === 1) {
+            setActiveSubProduct(product.products[0]);
+        } else {
+            setActiveSubProduct(null);
+        }
+    } else {
+        setActiveSubProduct(null);
+    }
   };
 
   const closeProductModal = () => {
@@ -134,9 +146,11 @@ const MenuPage = () => {
 
     const cartItem = {
         ...selectedProduct,
+        name: selectedProduct.isDeal && activeSubProduct ? `${selectedProduct.name} (${activeSubProduct.name})` : selectedProduct.name,
         price_pk: finalPrice,
         selectedVariants,
         selectedAddons,
+        selectedSubProduct: activeSubProduct, // Persist the specific sub-product choice
         uniqueId: Date.now() // Unique ID for cart item to distinguish same product with different options
     };
 
@@ -171,14 +185,72 @@ const MenuPage = () => {
       try {
         // 2. Fetch fresh data from Firebase
         let categoriesRef;
+        let dealsRef;
         
         if (selectedBranch.cityId) {
              categoriesRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`);
+             dealsRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/deals`);
         } else {
              categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
+             dealsRef = collection(db, `branches/${selectedBranch.id}/deals`);
         }
 
-        const categoriesSnapshot = await getDocs(categoriesRef);
+        const [categoriesSnapshot, dealsSnapshot] = await Promise.all([
+             getDocs(categoriesRef),
+             getDocs(dealsRef)
+        ]);
+
+        // Process Deals
+        const deals = dealsSnapshot.docs.map(doc => {
+             const data = doc.data();
+             
+             // Check expiry
+             if (data.endDate) {
+                 const end = data.endDate.toDate ? data.endDate.toDate() : new Date(data.endDate);
+                 if (end < new Date()) return null;
+             }
+             if (!data.isActive) return null;
+
+             return {
+                 id: doc.id,
+                 ...data,
+                 name: data.name || "Deal",
+                 description: data.description,
+                 price: data.dealPrice, // Use dealPrice as main price
+                 discountPrice: data.dealPrice, // For consistent display
+                 originalPrice: data.regularPrice, // Show if available
+                 imageUrl: data.imageUrl,
+                 isDeal: true, // Flag to identify deals
+                 // Normalize sub-products structure
+                 products: (data.products || []).map(p => ({
+                     ...p,
+                     // Map deal sub-product fields to standard fields expected by modal
+                     variants: p.availableVariants || [],
+                     flavors: p.availableFlavors || [],
+                     addons: p.availableAddons || [],
+                     Beverages: p.availableBeverages || [],
+                     price: p.basePrice || 0 // Use basePrice as the product's reference price
+                 }))
+             };
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+             // Sort by createdAt desc (newest first)
+             const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+             const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+             return dateB - dateA;
+        });
+
+        // Create a virtual "Deals" category if deals exist
+        let dealsCategory = null;
+        if (deals.length > 0) {
+            dealsCategory = {
+                id: "deals-category",
+                name: "Deals",
+                active: true,
+                products: deals
+            };
+        }
         
         const categoriesData = await Promise.all(categoriesSnapshot.docs.map(async (categoryDoc) => {
           const categoryData = categoryDoc.data();
@@ -216,7 +288,12 @@ const MenuPage = () => {
           };
         }));
         
-        const finalData = categoriesData.filter(cat => cat !== null);
+        let finalData = categoriesData.filter(cat => cat !== null);
+        
+        // Prepend Deals category if it exists
+        if (dealsCategory) {
+            finalData = [dealsCategory, ...finalData];
+        }
         
         // Update state and cache
         setCategories(finalData);
@@ -357,15 +434,21 @@ const MenuPage = () => {
     }
   };
 
-  const getFlavorImage = (flavor) => {
-      // 1. Get raw value from any possible field
-      let raw = flavor.imageUrl || flavor.image_url || flavor.image || flavor.img || flavor.imagepath || flavor.path;
+  const getCleanImageUrl = (source) => {
+      if (!source) return null;
       
-      // 2. Validate it exists and is a string
+      let raw;
+      if (typeof source === 'string') {
+          raw = source;
+      } else {
+          // Check all possible casing and fields
+          raw = source.imageUrl || source.imageurl || source.image_url || source.image || source.img || source.imagepath || source.path;
+      }
+      
       if (!raw) return null;
       
-      // 3. Nuclear option: Remove ALL quotes (single/double) and backticks globally
-      // This turns `" `http://url` "` into ` http://url `
+      // Nuclear option: Remove ALL quotes (single/double) and backticks globally
+      // Also trim whitespace
       let clean = String(raw).replace(/["'`]/g, "").trim();
       
       return clean.length > 0 ? clean : null;
@@ -509,7 +592,7 @@ const MenuPage = () => {
 
                     <div className="relative w-full aspect-square mb-2 overflow-hidden rounded-2xl bg-white">
                         <img 
-                            src={product.imageUrl || product.imagepath || "https://via.placeholder.com/640"} 
+                            src={getCleanImageUrl(product) || "https://via.placeholder.com/640"} 
                             alt={product.name} 
                             className="w-full h-full object-contain hover:scale-105 transition-transform duration-500"
                         />
@@ -616,9 +699,14 @@ const MenuPage = () => {
             {/* Header Image */}
             <div className="relative h-48 bg-gray-100">
                 <img 
-                    src={selectedProduct.imageUrl || selectedProduct.imagepath || "https://via.placeholder.com/150"} 
-                    alt={selectedProduct.name} 
+                    src={
+                        (selectedProduct.isDeal && activeSubProduct)
+                        ? (getCleanImageUrl(activeSubProduct) || getCleanImageUrl(selectedProduct) || "https://via.placeholder.com/150")
+                        : (getCleanImageUrl(selectedProduct) || "https://via.placeholder.com/150")
+                    } 
+                    alt={selectedProduct.isDeal && activeSubProduct ? activeSubProduct.name : selectedProduct.name} 
                     className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
                 />
                 <button 
                     onClick={closeProductModal}
@@ -631,333 +719,400 @@ const MenuPage = () => {
             </div>
 
             <div className="p-6 overflow-y-auto flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedProduct.name}</h2>
-                <p className="text-gray-500 text-sm mb-6">{selectedProduct.description}</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {selectedProduct.isDeal && activeSubProduct ? activeSubProduct.name : selectedProduct.name}
+                </h2>
+                <p className="text-gray-500 text-sm mb-6">
+                    {selectedProduct.isDeal && activeSubProduct ? activeSubProduct.description : selectedProduct.description}
+                </p>
 
-                {/* Variants Section */}
-                {selectedProduct.variants && selectedProduct.variants.length > 0 && selectedProduct.variants.some(v => v.name) && (
+                {/* Deal Product Selection */}
+                {selectedProduct.isDeal && selectedProduct.products && selectedProduct.products.length > 1 && (
                     <div className="mb-6">
                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
-                            Choose Variation 
+                            Choose Item
                             <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold">Required</span>
                         </h3>
-                        <div className="space-y-3">
-                            {selectedProduct.variants.filter(v => v.name).map((variant, index) => (
-                                <label 
-                                    key={variant.id || index}
-                                    className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                                        selectedVariants.id === variant.id || selectedVariants.name === variant.name 
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {selectedProduct.products.map((subProd, index) => (
+                                <div 
+                                    key={index}
+                                    onClick={() => {
+                                        setActiveSubProduct(subProd);
+                                        setSelectedVariants({});
+                                        setSelectedAddons({});
+                                    }}
+                                    className={`cursor-pointer p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${
+                                        activeSubProduct === subProd 
                                             ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
                                             : 'border-gray-100 hover:border-gray-200'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-12 h-12 rounded-lg border flex-shrink-0 overflow-hidden ${
-                                            selectedVariants.id === variant.id || selectedVariants.name === variant.name ? 'border-[#FFC72C]' : 'border-gray-200'
-                                        }`}>
-                                            <img 
-                                                src={variant.imageUrl || selectedProduct.imageUrl || selectedProduct.imagepath || "https://via.placeholder.com/150"} 
-                                                alt={variant.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="font-medium text-gray-700">{variant.name}</span>
-                                            {(selectedVariants.id === variant.id || selectedVariants.name === variant.name) && (
-                                                <span className="text-xs text-[#E25C1D] font-bold">Selected</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="font-bold text-gray-900">Rs. {variant.price}</span>
-                                        <input 
-                                            type="radio" 
-                                            name="variant" 
-                                            className="hidden"
-                                            checked={selectedVariants.id === variant.id || selectedVariants.name === variant.name}
-                                            onChange={() => setSelectedVariants(variant)}
+                                    <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                                        <img 
+                                            src={getCleanImageUrl(subProd) || "https://via.placeholder.com/150"} 
+                                            alt={subProd.name} 
+                                            className="w-full h-full object-cover"
+                                            referrerPolicy="no-referrer"
                                         />
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                            selectedVariants.id === variant.id || selectedVariants.name === variant.name 
-                                                ? 'border-[#FFC72C]' 
-                                                : 'border-gray-300'
-                                        }`}>
-                                            {(selectedVariants.id === variant.id || selectedVariants.name === variant.name) && (
-                                                <div className="w-2.5 h-2.5 rounded-full bg-[#FFC72C]"></div>
-                                            )}
-                                        </div>
                                     </div>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Flavors Section */}
-                {selectedProduct.flavors && selectedProduct.flavors.length > 0 && selectedProduct.flavors.some(f => f.name) && (
-                    <div className="mb-6">
-                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
-                            Flavors 
-                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold">Required</span>
-                        </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {selectedProduct.flavors.filter(f => f.name).map((flavor, index) => {
-                                const isSelected = selectedAddons['flavor']?.name === flavor.name;
-                                const flavorImg = getFlavorImage(flavor);
-                                return (
-                                <label 
-                                    key={`flav-${flavor.id || index}`}
-                                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                                        isSelected
-                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
-                                            : 'border-gray-100 hover:border-gray-200'
-                                    }`}
-                                >
-                                    {flavorImg && (
-                                        <div className="w-16 h-16 mb-2 rounded-full overflow-hidden border border-gray-100 bg-gray-50 relative">
-                                            <img 
-                                                src={flavorImg} 
-                                                alt={flavor.name} 
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    // Fallback to placeholder instead of hiding
-                                                    e.target.src = "https://via.placeholder.com/150?text=No+Image";
-                                                    // Only hide if the fallback also fails to prevent infinite loop
-                                                    e.target.onerror = () => {
-                                                        e.target.style.display = 'none';
-                                                    };
-                                                }}
-                                                loading="lazy"
-                                                referrerPolicy="no-referrer"
-                                            />
-                                        </div>
-                                    )}
-                                    <span className={`text-sm text-center ${isSelected ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
-                                        {flavor.name}
+                                    <span className={`font-bold text-sm ${activeSubProduct === subProd ? 'text-gray-900' : 'text-gray-600'}`}>
+                                        {subProd.name}
                                     </span>
-                                    {flavor.price && Number(flavor.price) > 0 && (
-                                        <span className="text-xs text-[#E25C1D] font-bold mt-1">
-                                            + Rs. {Number(flavor.price).toLocaleString()}
-                                        </span>
-                                    )}
-                                    
-                                    {/* Selection Indicator */}
-                                    {isSelected && (
-                                        <div className="absolute top-2 right-2 w-4 h-4 bg-[#FFC72C] rounded-full flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    )}
-
-                                    <input 
-                                        type="radio" 
-                                        name="flavor_selection"
-                                        className="hidden"
-                                        checked={isSelected}
-                                        onChange={() => {
-                                            const newAddons = { ...selectedAddons };
-                                            newAddons['flavor'] = { 
-                                                id: flavor.id,
-                                                name: flavor.name, 
-                                                imageUrl: flavorImg,
-                                                price: Number(flavor.price || 0), 
-                                                quantity: 1,
-                                                type: 'Flavor'
-                                            };
-                                            setSelectedAddons(newAddons);
-                                        }}
-                                    />
-                                </label>
-                            );})}
-                        </div>
-                    </div>
-                )}
-
-                {/* Addons Section */}
-                {selectedProduct.addons && selectedProduct.addons.length > 0 && selectedProduct.addons.some(a => a.name) && (
-                    <div className="mb-6">
-                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
-                            Add Ons 
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Optional</span>
-                        </h3>
-                        <div className="space-y-3">
-                            {selectedProduct.addons.filter(a => a.name).map((addon, index) => (
-                                <div key={addon.id || index} className="flex flex-col gap-2 p-4 rounded-xl border border-gray-100">
-                                    <label 
-                                        className={`flex items-center justify-between cursor-pointer transition-all ${
-                                            selectedAddons[addon.id || index] ? 'opacity-100' : 'opacity-80'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-12 h-12 rounded-lg border flex-shrink-0 overflow-hidden ${
-                                                selectedAddons[addon.id || index] ? 'border-[#FFC72C]' : 'border-gray-200'
-                                            }`}>
-                                                <img 
-                                                    src={addon.imageUrl || "https://via.placeholder.com/150"} 
-                                                    alt={addon.name}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                            <span className="font-medium text-gray-700">{addon.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className="font-bold text-gray-900">+ Rs. {addon.price}</span>
-                                            <input 
-                                                type="checkbox" 
-                                                className="hidden"
-                                                checked={!!selectedAddons[addon.id || index]}
-                                                onChange={(e) => {
-                                                    const newAddons = { ...selectedAddons };
-                                                    if (e.target.checked) {
-                                                        newAddons[addon.id || index] = { 
-                                                            id: addon.id,
-                                                            name: addon.name,
-                                                            price: addon.price,
-                                                            imageUrl: addon.imageUrl,
-                                                            quantity: 1,
-                                                            type: 'Addon' // Explicitly label as regular addon
-                                                        };
-                                                    } else {
-                                                        delete newAddons[addon.id || index];
-                                                    }
-                                                    setSelectedAddons(newAddons);
-                                                }}
-                                            />
-                                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                                selectedAddons[addon.id || index] 
-                                                    ? 'border-[#FFC72C] bg-[#FFC72C]' 
-                                                    : 'border-gray-300'
-                                            }`}>
-                                                {selectedAddons[addon.id || index] && (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-white">
-                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                    </svg>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </label>
-                                    
-                                    {/* Quantity Controls for Addon */}
-                                    {selectedAddons[addon.id || index] && (
-                                        <div className="flex justify-end items-center mt-2 border-t border-gray-50 pt-2">
-                                            <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const newAddons = { ...selectedAddons };
-                                                        if (newAddons[addon.id || index].quantity > 1) {
-                                                            newAddons[addon.id || index].quantity -= 1;
-                                                            setSelectedAddons(newAddons);
-                                                        } else {
-                                                            delete newAddons[addon.id || index];
-                                                            setSelectedAddons(newAddons);
-                                                        }
-                                                    }}
-                                                    className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black font-bold"
-                                                >
-                                                    −
-                                                </button>
-                                                <span className="text-xs font-bold w-4 text-center">{selectedAddons[addon.id || index].quantity}</span>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const newAddons = { ...selectedAddons };
-                                                        newAddons[addon.id || index].quantity = (newAddons[addon.id || index].quantity || 1) + 1;
-                                                        setSelectedAddons(newAddons);
-                                                    }}
-                                                    className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black font-bold"
-                                                >
-                                                    +
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
 
-                {/* Beverages Section */}
-                {selectedProduct.Beverages && selectedProduct.Beverages.length > 0 && selectedProduct.Beverages.some(b => b.name) && (
-                    <div className="mb-6">
-                         <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
-                            Beverages 
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Optional</span>
-                        </h3>
-                        <div className="space-y-2">
-                            {selectedProduct.Beverages.filter(b => b.name).map((beverage, index) => (
-                                <label 
-                                    key={`bev-${beverage.id || index}`}
-                                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                                        selectedAddons[`bev-${beverage.id || index}`] 
-                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
-                                            : 'border-gray-100 hover:border-gray-200'
-                                    }`}
-                                >
-                                    <span className="font-medium text-gray-700">{beverage.name}</span>
-                                    <div className="flex items-center gap-3">
-                                        <input 
-                                            type="checkbox" 
-                                            className="hidden"
-                                            checked={!!selectedAddons[`bev-${beverage.id || index}`]}
-                                            onChange={(e) => {
-                                                const newAddons = { ...selectedAddons };
-                                                if (e.target.checked) {
-                                                    newAddons[`bev-${beverage.id || index}`] = { 
-                                                        id: beverage.id,
-                                                        name: beverage.name, 
-                                                        price: 0, // Assuming beverages might be free or included, update if they have price
-                                                        quantity: 1,
-                                                        type: 'Beverage'
-                                                    };
-                                                } else {
-                                                    delete newAddons[`bev-${beverage.id || index}`];
-                                                }
-                                                setSelectedAddons(newAddons);
-                                            }}
-                                        />
-                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                            selectedAddons[`bev-${beverage.id || index}`] 
-                                                ? 'border-[#FFC72C] bg-[#FFC72C]' 
-                                                : 'border-gray-300'
-                                        }`}>
-                                            {selectedAddons[`bev-${beverage.id || index}`] && (
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-white">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                            )}
-                                        </div>
+                {/* Render Options for the Active Target (Product or Deal Sub-Product) */}
+                {(() => {
+                    const targetProduct = selectedProduct.isDeal ? activeSubProduct : selectedProduct;
+                    
+                    if (!targetProduct) return null;
+
+                    return (
+                        <>
+                            {/* Variants Section */}
+                            {targetProduct.variants && targetProduct.variants.length > 0 && targetProduct.variants.some(v => v.name) && (
+                                <div className="mb-6">
+                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
+                                        Choose Variation 
+                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold">Required</span>
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {targetProduct.variants.filter(v => v.name).map((variant, index) => (
+                                            <label 
+                                                key={variant.id || index}
+                                                className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                                    selectedVariants.id === variant.id || selectedVariants.name === variant.name 
+                                                        ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
+                                                        : 'border-gray-100 hover:border-gray-200'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                        <div className={`w-12 h-12 rounded-lg border flex-shrink-0 overflow-hidden ${
+                                                            selectedVariants.id === variant.id || selectedVariants.name === variant.name ? 'border-[#FFC72C]' : 'border-gray-200'
+                                                        }`}>
+                                                            <img 
+                                                                src={getCleanImageUrl(selectedProduct.isDeal ? null : variant) || getCleanImageUrl(targetProduct) || getCleanImageUrl(selectedProduct) || "https://via.placeholder.com/150"} 
+                                                                alt={variant.name}
+                                                                className="w-full h-full object-cover"
+                                                                referrerPolicy="no-referrer"
+                                                            />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                        <span className="font-medium text-gray-700">{variant.name}</span>
+                                                        {(selectedVariants.id === variant.id || selectedVariants.name === variant.name) && (
+                                                            <span className="text-xs text-[#E25C1D] font-bold">Selected</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-bold text-gray-900">
+                                                        {Number(variant.price) > 0 ? `+ Rs. ${variant.price}` : 'Free'}
+                                                    </span>
+                                                    <input 
+                                                        type="radio" 
+                                                        name="variant" 
+                                                        className="hidden"
+                                                        checked={selectedVariants.id === variant.id || selectedVariants.name === variant.name}
+                                                        onChange={() => setSelectedVariants(variant)}
+                                                    />
+                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                                        selectedVariants.id === variant.id || selectedVariants.name === variant.name 
+                                                            ? 'border-[#FFC72C]' 
+                                                            : 'border-gray-300'
+                                                    }`}>
+                                                        {(selectedVariants.id === variant.id || selectedVariants.name === variant.name) && (
+                                                            <div className="w-2.5 h-2.5 rounded-full bg-[#FFC72C]"></div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        ))}
                                     </div>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                                </div>
+                            )}
+
+                            {/* Flavors Section */}
+                            {targetProduct.flavors && targetProduct.flavors.length > 0 && targetProduct.flavors.some(f => f.name) && (
+                                <div className="mb-6">
+                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
+                                        Flavors 
+                                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold">Required</span>
+                                    </h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {targetProduct.flavors.filter(f => f.name).map((flavor, index) => {
+                                            const isSelected = selectedAddons['flavor']?.name === flavor.name;
+                                            const flavorImg = getCleanImageUrl(flavor);
+                                            return (
+                                            <label 
+                                                key={`flav-${flavor.id || index}`}
+                                                className={`relative flex flex-col items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                                    isSelected
+                                                        ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
+                                                        : 'border-gray-100 hover:border-gray-200'
+                                                }`}
+                                            >
+                                                {flavorImg && (
+                                                    <div className="w-16 h-16 mb-2 rounded-full overflow-hidden border border-gray-100 bg-gray-50 relative">
+                                                        <img 
+                                                            src={flavorImg} 
+                                                            alt={flavor.name} 
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.target.src = "https://via.placeholder.com/150?text=No+Image";
+                                                                e.target.onerror = () => {
+                                                                    e.target.style.display = 'none';
+                                                                };
+                                                            }}
+                                                            loading="lazy"
+                                                            referrerPolicy="no-referrer"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <span className={`text-sm text-center ${isSelected ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+                                                    {flavor.name}
+                                                </span>
+                                                {flavor.price && Number(flavor.price) > 0 && (
+                                                    <span className="text-xs text-[#E25C1D] font-bold mt-1">
+                                                        + Rs. {Number(flavor.price).toLocaleString()}
+                                                    </span>
+                                                )}
+                                                
+                                                {isSelected && (
+                                                    <div className="absolute top-2 right-2 w-4 h-4 bg-[#FFC72C] rounded-full flex items-center justify-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+
+                                                <input 
+                                                    type="radio" 
+                                                    name="flavor_selection"
+                                                    className="hidden"
+                                                    checked={isSelected}
+                                                    onChange={() => {
+                                                        const newAddons = { ...selectedAddons };
+                                                        newAddons['flavor'] = { 
+                                                            id: flavor.id,
+                                                            name: flavor.name, 
+                                                            imageUrl: flavorImg,
+                                                            price: Number(flavor.price || 0), 
+                                                            quantity: 1,
+                                                            type: 'Flavor'
+                                                        };
+                                                        setSelectedAddons(newAddons);
+                                                    }}
+                                                />
+                                            </label>
+                                        );})}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Addons Section */}
+                            {targetProduct.addons && targetProduct.addons.length > 0 && targetProduct.addons.some(a => a.name) && (
+                                <div className="mb-6">
+                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
+                                        Add Ons 
+                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Optional</span>
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {targetProduct.addons.filter(a => a.name).map((addon, index) => (
+                                            <div key={addon.id || index} className="flex flex-col gap-2 p-4 rounded-xl border border-gray-100">
+                                                <label 
+                                                    className={`flex items-center justify-between cursor-pointer transition-all ${
+                                                        selectedAddons[addon.id || index] ? 'opacity-100' : 'opacity-80'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        {!selectedProduct.isDeal && (
+                                                            <div className={`w-12 h-12 rounded-lg border flex-shrink-0 overflow-hidden ${
+                                                                selectedAddons[addon.id || index] ? 'border-[#FFC72C]' : 'border-gray-200'
+                                                            }`}>
+                                                                <img 
+                                                                    src={getCleanImageUrl(addon) || "https://via.placeholder.com/150"} 
+                                                                    alt={addon.name}
+                                                                    className="w-full h-full object-cover"
+                                                                    referrerPolicy="no-referrer"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        <span className="font-medium text-gray-700">{addon.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="font-bold text-gray-900">+ Rs. {addon.price}</span>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            className="hidden"
+                                                            checked={!!selectedAddons[addon.id || index]}
+                                                            onChange={(e) => {
+                                                                const newAddons = { ...selectedAddons };
+                                                                if (e.target.checked) {
+                                                                    newAddons[addon.id || index] = { 
+                                                                        id: addon.id,
+                                                                        name: addon.name,
+                                                                        price: addon.price,
+                                                                        imageUrl: addon.imageUrl,
+                                                                        quantity: 1,
+                                                                        type: 'Addon' 
+                                                                    };
+                                                                } else {
+                                                                    delete newAddons[addon.id || index];
+                                                                }
+                                                                setSelectedAddons(newAddons);
+                                                            }}
+                                                        />
+                                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                                            selectedAddons[addon.id || index] 
+                                                                ? 'border-[#FFC72C] bg-[#FFC72C]' 
+                                                                : 'border-gray-300'
+                                                        }`}>
+                                                            {selectedAddons[addon.id || index] && (
+                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-white">
+                                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                </svg>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                                
+                                                {selectedAddons[addon.id || index] && (
+                                                    <div className="flex justify-end items-center mt-2 border-t border-gray-50 pt-2">
+                                                        <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const newAddons = { ...selectedAddons };
+                                                                    if (newAddons[addon.id || index].quantity > 1) {
+                                                                        newAddons[addon.id || index].quantity -= 1;
+                                                                        setSelectedAddons(newAddons);
+                                                                    } else {
+                                                                        delete newAddons[addon.id || index];
+                                                                        setSelectedAddons(newAddons);
+                                                                    }
+                                                                }}
+                                                                className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black font-bold"
+                                                            >
+                                                                −
+                                                            </button>
+                                                            <span className="text-xs font-bold w-4 text-center">{selectedAddons[addon.id || index].quantity}</span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const newAddons = { ...selectedAddons };
+                                                                    newAddons[addon.id || index].quantity = (newAddons[addon.id || index].quantity || 1) + 1;
+                                                                    setSelectedAddons(newAddons);
+                                                                }}
+                                                                className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black font-bold"
+                                                            >
+                                                                +
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Beverages Section */}
+                            {targetProduct.Beverages && targetProduct.Beverages.length > 0 && targetProduct.Beverages.some(b => b.name) && (
+                                <div className="mb-6">
+                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
+                                        Beverages 
+                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Optional</span>
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {targetProduct.Beverages.filter(b => b.name).map((beverage, index) => (
+                                            <label 
+                                                key={`bev-${beverage.id || index}`}
+                                                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
+                                                    selectedAddons[`bev-${beverage.id || index}`] 
+                                                        ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
+                                                        : 'border-gray-100 hover:border-gray-200'
+                                                }`}
+                                            >
+                                                <span className="font-medium text-gray-700">{beverage.name}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="hidden"
+                                                        checked={!!selectedAddons[`bev-${beverage.id || index}`]}
+                                                        onChange={(e) => {
+                                                            const newAddons = { ...selectedAddons };
+                                                            if (e.target.checked) {
+                                                                newAddons[`bev-${beverage.id || index}`] = { 
+                                                                    id: beverage.id,
+                                                                    name: beverage.name, 
+                                                                    price: 0, 
+                                                                    quantity: 1,
+                                                                    type: 'Beverage'
+                                                                };
+                                                            } else {
+                                                                delete newAddons[`bev-${beverage.id || index}`];
+                                                            }
+                                                            setSelectedAddons(newAddons);
+                                                        }}
+                                                    />
+                                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                                        selectedAddons[`bev-${beverage.id || index}`] 
+                                                            ? 'border-[#FFC72C] bg-[#FFC72C]' 
+                                                            : 'border-gray-300'
+                                                    }`}>
+                                                        {selectedAddons[`bev-${beverage.id || index}`] && (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-white">
+                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    );
+                })()}
             </div>
 
             {/* Footer Actions */}
             <div className="p-4 border-t border-gray-100 bg-white">
                 <button 
                     onClick={handleAddToCart}
-                    disabled={selectedProduct.variants && selectedProduct.variants.filter(v => v.name).length > 0 && !selectedVariants.name}
+                    disabled={(() => {
+                        const targetProduct = selectedProduct.isDeal ? activeSubProduct : selectedProduct;
+                        if (!targetProduct) return true; // Deal but no sub-product selected
+                        if (targetProduct.variants && targetProduct.variants.filter(v => v.name).length > 0 && !selectedVariants.name) return true;
+                        return false;
+                    })()}
                     className="w-full bg-[#FFC72C] hover:bg-[#ffcf4b] text-black font-bold py-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-between px-6"
                 >
                     <span>Add to Order</span>
                     <span>
                         Rs. {(() => {
-                            let total = Number(selectedProduct.price || 0);
+                            let total = 0;
                             
-                            // Check for discount price - strict override if exists
-                            if (selectedProduct.discountPrice && Number(selectedProduct.discountPrice) > 0) {
-                                total = Number(selectedProduct.discountPrice);
-                            }
-
-                            // If variant selected, use that price instead of base/discount
-                            // Note: Variants usually contain the full price, not an addition.
-                            if (selectedVariants.price) {
-                                total = Number(selectedVariants.price);
+                            if (selectedProduct.isDeal) {
+                                total = Number(selectedProduct.dealPrice || selectedProduct.price || 0);
+                                // Add variant price as additive for deals
+                                if (selectedVariants.price) {
+                                    total += Number(selectedVariants.price);
+                                }
+                            } else {
+                                // Regular Product Logic
+                                total = Number(selectedProduct.price || 0);
+                                if (selectedProduct.discountPrice && Number(selectedProduct.discountPrice) > 0) {
+                                    total = Number(selectedProduct.discountPrice);
+                                }
+                                if (selectedVariants.price) {
+                                    total = Number(selectedVariants.price);
+                                }
                             }
                             
                             Object.values(selectedAddons).forEach(a => total += Number(a.price || 0) * (a.quantity || 1));
