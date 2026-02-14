@@ -36,18 +36,42 @@ const MenuPage = () => {
 
   // ... (existing code)
 
+  const [selectedDealProducts, setSelectedDealProducts] = useState({}); // Track selections for EACH product in a deal
+  const [activeSubProductIndex, setActiveSubProductIndex] = useState(0); // Track which product we are currently customizing
+
+  const isProductReady = (prod, selection) => {
+      if (!selection) selection = {};
+      
+      // 1. Check Variants
+      if (prod.variants && prod.variants.length > 0 && prod.variants.some(v => v.name)) {
+          if (!selection.variant || !selection.variant.name) return false;
+      }
+
+      // 2. Check Flavors (Required)
+      if (prod.flavors && prod.flavors.length > 0 && prod.flavors.some(f => f.name)) {
+          if (!selection.addons || !selection.addons['flavor']) return false;
+      }
+
+      // 3. Check Beverages (Required - at least one)
+      if (prod.Beverages && prod.Beverages.length > 0 && prod.Beverages.some(b => b.name)) {
+           if (!selection.addons) return false;
+           const hasBev = Object.keys(selection.addons).some(k => k.startsWith('bev-'));
+           if (!hasBev) return false;
+      }
+
+      return true;
+  };
+
   const openProductModal = (product) => {
     setSelectedProduct(product);
     setSelectedVariants({});
     setSelectedAddons({});
+    setSelectedDealProducts({});
+    setActiveSubProductIndex(0);
     
-    // For deals, auto-select the first product if it's the only one, or strictly reset if multiple
+    // For deals, initialize the selection structure for all products
     if (product.isDeal && product.products && product.products.length > 0) {
-        if (product.products.length === 1) {
-            setActiveSubProduct(product.products[0]);
-        } else {
-            setActiveSubProduct(null);
-        }
+        setActiveSubProduct(product.products[0]);
     } else {
         setActiveSubProduct(null);
     }
@@ -128,6 +152,46 @@ const MenuPage = () => {
 
     if (!selectedProduct) return;
 
+    // For Deal: We need to validate that ALL required choices for ALL products are made
+    if (selectedProduct.isDeal) {
+        // Build the cart item with nested product selections
+        const dealItems = selectedProduct.products.map((prod, index) => {
+            const selection = selectedDealProducts[index] || {};
+            return {
+                ...prod,
+                selectedVariants: selection.variant || {},
+                selectedAddons: selection.addons || {}
+            };
+        });
+
+        // Calculate total price based on deal base price + extra costs from all sub-products
+        let dealTotal = Number(selectedProduct.dealPrice || selectedProduct.price || 0);
+        dealItems.forEach(item => {
+            if (item.selectedVariants && item.selectedVariants.price) {
+                dealTotal += Number(item.selectedVariants.price);
+            }
+            if (item.selectedAddons) {
+                Object.values(item.selectedAddons).forEach(addon => {
+                    dealTotal += Number(addon.price || 0) * (addon.quantity || 1);
+                });
+            }
+        });
+
+        const cartItem = {
+            ...selectedProduct,
+            name: selectedProduct.name, // Just deal name, sub-details will be in description or separate field
+            description: dealItems.map(d => `${d.name} (${d.selectedVariants.name || 'Regular'})`).join(', '),
+            price_pk: dealTotal,
+            isDeal: true,
+            dealItems: dealItems, // Store full details
+            uniqueId: Date.now()
+        };
+        addToCart(cartItem);
+        closeProductModal();
+        return;
+    }
+
+    // Regular Product Logic (Existing)
     // Start with base price (prioritizing discountPrice if available)
     let finalPrice = Number(selectedProduct.price || 0);
     if (selectedProduct.discountPrice && Number(selectedProduct.discountPrice) > 0) {
@@ -590,7 +654,10 @@ const MenuPage = () => {
                         )}
                     </button>
 
-                    <div className="relative w-full aspect-square mb-2 overflow-hidden rounded-2xl bg-white">
+                    <div 
+                        className="relative w-full aspect-square mb-2 overflow-hidden rounded-2xl bg-white cursor-pointer"
+                        onClick={() => openProductModal(product)}
+                    >
                         <img 
                             src={getCleanImageUrl(product) || "https://via.placeholder.com/640"} 
                             alt={product.name} 
@@ -726,29 +793,36 @@ const MenuPage = () => {
                     {selectedProduct.isDeal && activeSubProduct ? activeSubProduct.description : selectedProduct.description}
                 </p>
 
-                {/* Deal Product Selection */}
-                {selectedProduct.isDeal && selectedProduct.products && selectedProduct.products.length > 1 && (
+                {/* Deal Product Selection Tabs */}
+                {selectedProduct.isDeal && selectedProduct.products && selectedProduct.products.length > 0 && (
                     <div className="mb-6">
-                        <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-between">
-                            Choose Item
-                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold">Required</span>
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {selectedProduct.products.map((subProd, index) => (
-                                <div 
+                        <h3 className="font-bold text-gray-800 mb-3">Configure Your Meal</h3>
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                            {selectedProduct.products.map((subProd, index) => {
+                                const currentSelection = selectedDealProducts[index] || {};
+                                const isCompleted = isProductReady(subProd, currentSelection); // Robust Check
+                                const isActive = activeSubProduct === subProd;
+                                
+                                return (
+                                <button 
                                     key={index}
                                     onClick={() => {
                                         setActiveSubProduct(subProd);
-                                        setSelectedVariants({});
-                                        setSelectedAddons({});
+                                        setActiveSubProductIndex(index);
+                                        // Load existing selection for this product if any
+                                        const saved = selectedDealProducts[index] || {};
+                                        setSelectedVariants(saved.variant || {});
+                                        setSelectedAddons(saved.addons || {});
                                     }}
-                                    className={`cursor-pointer p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${
-                                        activeSubProduct === subProd 
-                                            ? 'border-[#FFC72C] bg-[#FFC72C]/5' 
-                                            : 'border-gray-100 hover:border-gray-200'
+                                    className={`flex-shrink-0 flex items-center gap-2 p-2 pr-4 rounded-xl border-2 transition-all ${
+                                        isActive 
+                                            ? 'border-[#FFC72C] bg-[#FFC72C]/10' 
+                                            : isCompleted 
+                                                ? 'border-green-500 bg-green-50'
+                                                : 'border-gray-100 hover:border-gray-200'
                                     }`}
                                 >
-                                    <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                                    <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
                                         <img 
                                             src={getCleanImageUrl(subProd) || "https://via.placeholder.com/150"} 
                                             alt={subProd.name} 
@@ -756,11 +830,16 @@ const MenuPage = () => {
                                             referrerPolicy="no-referrer"
                                         />
                                     </div>
-                                    <span className={`font-bold text-sm ${activeSubProduct === subProd ? 'text-gray-900' : 'text-gray-600'}`}>
-                                        {subProd.name}
-                                    </span>
-                                </div>
-                            ))}
+                                    <div className="flex flex-col items-start">
+                                        <span className={`font-bold text-xs ${isActive ? 'text-gray-900' : 'text-gray-600'}`}>
+                                            {subProd.name}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500">
+                                            {isCompleted ? '✓ Ready' : 'Pending'}
+                                        </span>
+                                    </div>
+                                </button>
+                            )})}
                         </div>
                     </div>
                 )}
@@ -817,7 +896,19 @@ const MenuPage = () => {
                                                         name="variant" 
                                                         className="hidden"
                                                         checked={selectedVariants.id === variant.id || selectedVariants.name === variant.name}
-                                                        onChange={() => setSelectedVariants(variant)}
+                                                        onChange={() => {
+                                                            setSelectedVariants(variant);
+                                                            // Save to deal state
+                                                            if (selectedProduct.isDeal) {
+                                                                setSelectedDealProducts(prev => ({
+                                                                    ...prev,
+                                                                    [activeSubProductIndex]: {
+                                                                        ...prev[activeSubProductIndex],
+                                                                        variant: variant
+                                                                    }
+                                                                }));
+                                                            }
+                                                        }}
                                                     />
                                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                                                         selectedVariants.id === variant.id || selectedVariants.name === variant.name 
@@ -905,6 +996,16 @@ const MenuPage = () => {
                                                             type: 'Flavor'
                                                         };
                                                         setSelectedAddons(newAddons);
+                                                        
+                                                        if (selectedProduct.isDeal) {
+                                                            setSelectedDealProducts(prev => ({
+                                                                ...prev,
+                                                                [activeSubProductIndex]: {
+                                                                    ...prev[activeSubProductIndex],
+                                                                    addons: newAddons
+                                                                }
+                                                            }));
+                                                        }
                                                     }}
                                                 />
                                             </label>
@@ -964,6 +1065,16 @@ const MenuPage = () => {
                                                                     delete newAddons[addon.id || index];
                                                                 }
                                                                 setSelectedAddons(newAddons);
+
+                                                                if (selectedProduct.isDeal) {
+                                                                    setSelectedDealProducts(prev => ({
+                                                                        ...prev,
+                                                                        [activeSubProductIndex]: {
+                                                                            ...prev[activeSubProductIndex],
+                                                                            addons: newAddons
+                                                                        }
+                                                                    }));
+                                                                }
                                                             }}
                                                         />
                                                         <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
@@ -994,6 +1105,16 @@ const MenuPage = () => {
                                                                         delete newAddons[addon.id || index];
                                                                         setSelectedAddons(newAddons);
                                                                     }
+
+                                                                    if (selectedProduct.isDeal) {
+                                                                        setSelectedDealProducts(prev => ({
+                                                                            ...prev,
+                                                                            [activeSubProductIndex]: {
+                                                                                ...prev[activeSubProductIndex],
+                                                                                addons: newAddons
+                                                                            }
+                                                                        }));
+                                                                    }
                                                                 }}
                                                                 className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black font-bold"
                                                             >
@@ -1006,6 +1127,16 @@ const MenuPage = () => {
                                                                     const newAddons = { ...selectedAddons };
                                                                     newAddons[addon.id || index].quantity = (newAddons[addon.id || index].quantity || 1) + 1;
                                                                     setSelectedAddons(newAddons);
+
+                                                                    if (selectedProduct.isDeal) {
+                                                                        setSelectedDealProducts(prev => ({
+                                                                            ...prev,
+                                                                            [activeSubProductIndex]: {
+                                                                                ...prev[activeSubProductIndex],
+                                                                                addons: newAddons
+                                                                            }
+                                                                        }));
+                                                                    }
                                                                 }}
                                                                 className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-gray-600 hover:text-black font-bold"
                                                             >
@@ -1057,6 +1188,16 @@ const MenuPage = () => {
                                                                 delete newAddons[`bev-${beverage.id || index}`];
                                                             }
                                                             setSelectedAddons(newAddons);
+
+                                                            if (selectedProduct.isDeal) {
+                                                                setSelectedDealProducts(prev => ({
+                                                                    ...prev,
+                                                                    [activeSubProductIndex]: {
+                                                                        ...prev[activeSubProductIndex],
+                                                                        addons: newAddons
+                                                                    }
+                                                                }));
+                                                            }
                                                         }}
                                                     />
                                                     <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
@@ -1086,10 +1227,17 @@ const MenuPage = () => {
                 <button 
                     onClick={handleAddToCart}
                     disabled={(() => {
-                        const targetProduct = selectedProduct.isDeal ? activeSubProduct : selectedProduct;
-                        if (!targetProduct) return true; // Deal but no sub-product selected
-                        if (targetProduct.variants && targetProduct.variants.filter(v => v.name).length > 0 && !selectedVariants.name) return true;
-                        return false;
+                        if (selectedProduct.isDeal) {
+                            const subProducts = selectedProduct.products || [];
+                            return !subProducts.every((prod, idx) => {
+                                const selection = selectedDealProducts[idx] || {};
+                                return isProductReady(prod, selection);
+                            });
+                        } else {
+                            const targetProduct = selectedProduct;
+                            if (targetProduct.variants && targetProduct.variants.filter(v => v.name).length > 0 && !selectedVariants.name) return true;
+                            return false;
+                        }
                     })()}
                     className="w-full bg-[#FFC72C] hover:bg-[#ffcf4b] text-black font-bold py-4 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-between px-6"
                 >
@@ -1099,11 +1247,26 @@ const MenuPage = () => {
                             let total = 0;
                             
                             if (selectedProduct.isDeal) {
+                                // 1. Start with Deal Base Price
                                 total = Number(selectedProduct.dealPrice || selectedProduct.price || 0);
-                                // Add variant price as additive for deals
-                                if (selectedVariants.price) {
-                                    total += Number(selectedVariants.price);
-                                }
+                                
+                                // 2. Add extra costs from ALL products in the deal (Variants + Addons)
+                                // We iterate over the full product list to capture selections from state
+                                (selectedProduct.products || []).forEach((_, idx) => {
+                                    const selection = selectedDealProducts[idx] || {};
+                                    
+                                    // Add Variant Price
+                                    if (selection.variant && selection.variant.price) {
+                                        total += Number(selection.variant.price);
+                                    }
+                                    
+                                    // Add Addons Prices (Flavors, Beverages, Extras)
+                                    if (selection.addons) {
+                                        Object.values(selection.addons).forEach(addon => {
+                                            total += Number(addon.price || 0) * (addon.quantity || 1);
+                                        });
+                                    }
+                                });
                             } else {
                                 // Regular Product Logic
                                 total = Number(selectedProduct.price || 0);
@@ -1113,9 +1276,9 @@ const MenuPage = () => {
                                 if (selectedVariants.price) {
                                     total = Number(selectedVariants.price);
                                 }
+                                Object.values(selectedAddons).forEach(a => total += Number(a.price || 0) * (a.quantity || 1));
                             }
                             
-                            Object.values(selectedAddons).forEach(a => total += Number(a.price || 0) * (a.quantity || 1));
                             return total.toLocaleString();
                         })()}
                     </span>
