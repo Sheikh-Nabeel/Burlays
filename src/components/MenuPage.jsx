@@ -270,25 +270,46 @@ const MenuPage = () => {
       try {
         // 2. Fetch fresh data from Firebase
         let categoriesRef;
-        let dealsRef;
         
         if (selectedBranch.cityId) {
              categoriesRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`);
-             dealsRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/deals`);
         } else {
              categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
-             dealsRef = collection(db, `branches/${selectedBranch.id}/deals`);
         }
 
-        const [categoriesSnapshot, dealsSnapshot] = await Promise.all([
-             getDocs(categoriesRef),
-             getDocs(dealsRef)
-        ]);
+        const categoriesSnapshot = await getDocs(categoriesRef);
+        
+        // 1. Map Categories
+        let categoriesData = await Promise.all(categoriesSnapshot.docs.map(async (categoryDoc) => {
+          const categoryData = categoryDoc.data();
+          if (categoryData.active === false) return null;
 
-        // Process Deals
-        const deals = dealsSnapshot.docs.map(doc => {
+          // Construct paths
+          const basePath = selectedBranch.cityId 
+            ? `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories/${categoryDoc.id}`
+            : `branches/${selectedBranch.id}/categories/${categoryDoc.id}`;
+
+          const productsRef = collection(db, `${basePath}/products`);
+          const dealsRef = collection(db, `${basePath}/deals`);
+
+          const [productsSnapshot, dealsSnapshot] = await Promise.all([
+              getDocs(productsRef),
+              getDocs(dealsRef)
+          ]);
+
+          // Process Products
+          const productsData = productsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const flavors = data.flavors ? data.flavors.map(f => {
+                if (typeof f === 'string') return { name: f, id: f };
+                return { ...f };
+            }) : [];
+            return { id: doc.id, ...data, flavors: flavors };
+          }).filter(prod => prod.inStock !== false);
+
+          // Process Deals (New Structure)
+          const dealsData = dealsSnapshot.docs.map(doc => {
              const data = doc.data();
-             
              // Check expiry
              if (data.endDate) {
                  const end = data.endDate.toDate ? data.endDate.toDate() : new Date(data.endDate);
@@ -301,88 +322,46 @@ const MenuPage = () => {
                  ...data,
                  name: data.name || "Deal",
                  description: data.description,
-                 price: data.dealPrice, // Use dealPrice as main price
-                 discountPrice: data.dealPrice, // For consistent display
-                 originalPrice: data.regularPrice, // Show if available
+                 price: data.dealPrice, 
+                 discountPrice: data.dealPrice,
+                 originalPrice: data.regularPrice,
                  imageUrl: data.imageUrl,
-                 isDeal: true, // Flag to identify deals
-                 // Normalize sub-products structure
+                 isDeal: true,
                  products: (data.products || []).map(p => ({
                      ...p,
-                     // Map deal sub-product fields to standard fields expected by modal
                      variants: p.availableVariants || [],
                      flavors: p.availableFlavors || [],
                      addons: p.availableAddons || [],
                      Beverages: p.availableBeverages || [],
-                     price: p.basePrice || 0 // Use basePrice as the product's reference price
+                     price: p.basePrice || 0
                  }))
              };
-        })
-        .filter(Boolean)
-        .sort((a, b) => {
-             // Sort by createdAt desc (newest first)
+          }).filter(Boolean);
+
+          // If this category has deals, we might want to treat them as products or separate
+          // For now, let's merge them into products list or handle them if it's a "Deals" category
+          let mergedItems = [...productsData, ...dealsData];
+          
+          // Sort items
+          mergedItems.sort((a, b) => {
              const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
              const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
              return dateB - dateA;
-        });
-
-        // Create a virtual "Deals" category if deals exist
-        let dealsCategory = null;
-        if (deals.length > 0) {
-            dealsCategory = {
-                id: "deals-category",
-                name: "Deals",
-                active: true,
-                products: deals
-            };
-        }
-        
-        const categoriesData = await Promise.all(categoriesSnapshot.docs.map(async (categoryDoc) => {
-          const categoryData = categoryDoc.data();
-          
-          if (categoryData.active === false) return null;
-
-          let productsRef;
-          
-          if (selectedBranch.cityId) {
-               productsRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories/${categoryDoc.id}/products`);
-          } else {
-               productsRef = collection(db, `branches/${selectedBranch.id}/categories/${categoryDoc.id}/products`);
-          }
-
-          const productsSnapshot = await getDocs(productsRef);
-          const productsData = productsSnapshot.docs.map(doc => {
-            const data = doc.data();
-            
-            const flavors = data.flavors ? data.flavors.map(f => {
-                if (typeof f === 'string') return { name: f, id: f };
-                return { ...f };
-            }) : [];
-
-            return {
-                id: doc.id,
-                ...data,
-                flavors: flavors
-            };
-          }).filter(prod => prod.inStock !== false);
+          });
 
           return {
             id: categoryDoc.id,
             ...categoryData,
-            products: productsData
+            products: mergedItems,
+            hasDeals: dealsData.length > 0
           };
         }));
+
+        categoriesData = categoriesData.filter(cat => cat !== null && cat.products.length > 0);
         
-        let finalData = categoriesData.filter(cat => cat !== null);
-        
-        // Prepend Deals category if it exists
-        if (dealsCategory) {
-            finalData = [dealsCategory, ...finalData];
-        }
-        
-        // Update state and cache
-        setCategories(finalData);
-        localStorage.setItem(cacheKey, JSON.stringify(finalData));
+        // Update state
+        setCategories(categoriesData);
+        localStorage.setItem(cacheKey, JSON.stringify(categoriesData));
         
       } catch (error) {
         console.error("Error fetching menu data:", error);

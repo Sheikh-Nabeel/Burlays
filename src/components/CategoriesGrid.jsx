@@ -22,54 +22,24 @@ const CategoriesGrid = () => {
 
       try {
         let categoriesRef;
-        let dealsRef;
         
         // Use the new nested structure: cities/{cityId}/branches/{branchId}/categories
         if (selectedBranch.cityId) {
              categoriesRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`);
-             dealsRef = collection(db, `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/deals`);
         } else {
              // Fallback
              console.warn("Missing cityId in selectedBranch, attempting to use provided schema path structure.");
              categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
-             dealsRef = collection(db, `branches/${selectedBranch.id}/deals`);
         }
 
-        const [categoriesSnapshot, dealsSnapshot] = await Promise.all([
-             getDocs(categoriesRef),
-             getDocs(dealsRef)
-        ]);
-
-        // Process Deals
-        const deals = dealsSnapshot.docs.map(doc => {
-             const data = doc.data();
-             if (data.endDate) {
-                 const end = data.endDate.toDate ? data.endDate.toDate() : new Date(data.endDate);
-                 if (end < new Date()) return null;
-             }
-             if (!data.isActive) return null;
-             return { id: doc.id, ...data };
-        }).filter(Boolean);
+        const categoriesSnapshot = await getDocs(categoriesRef);
 
         const categoriesData = categoriesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })).filter(cat => cat.active !== false);
         
-        let finalData = categoriesData;
-        
-        // Prepend Deals as a category if available
-        if (deals.length > 0) {
-            const dealsCategory = {
-                id: 'deals-category',
-                name: 'Deals',
-                imageUrl: 'https://cdn-icons-png.flaticon.com/512/662/662846.png', // Generic deal icon or use specific image
-                isDealCategory: true
-            };
-            finalData = [dealsCategory, ...categoriesData];
-        }
-
-        setCategories(finalData);
+        setCategories(categoriesData);
       } catch (error) {
         console.error("Error fetching categories:", error);
       } finally {
