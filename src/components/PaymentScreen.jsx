@@ -5,7 +5,7 @@ import { useCart } from "../contexts/CartContext";
 import { toast } from "react-toastify";
 import { useLocation } from "../hooks/useLocation";
 import { auth, db } from "../firebase";
-import { collection, addDoc, serverTimestamp, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 import LocationPicker from "./LocationPicker";
 
 const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
@@ -136,6 +136,39 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
         address: address, // Save the address for next time
         phone: phone      // Update phone if changed
       });
+
+      try {
+        if (selectedBranch.cityId && selectedBranch.id) {
+          const branchRef = doc(db, 'cities', selectedBranch.cityId, 'branches', selectedBranch.id);
+          const branchSnap = await getDoc(branchRef);
+          const managerEmail = branchSnap.exists() ? branchSnap.data().email : null;
+          if (managerEmail) {
+            const itemsHtml = orderData.items.map(i => `<li>${i.name} x${i.quantity} - Rs. ${Number(i.totalPrice).toLocaleString()}</li>`).join('');
+            const html = `
+              <h2>New Order Received</h2>
+              <p><strong>Order ID:</strong> ${docRef.id}</p>
+              <p><strong>Branch:</strong> ${orderData.branchName}</p>
+              <p><strong>Customer:</strong> ${orderData.customerName} (${orderData.customerPhone})</p>
+              <p><strong>Address:</strong> ${orderData.deliveryAddress}</p>
+              <p><strong>Total:</strong> Rs. ${Number(orderData.totalAmount).toLocaleString()}</p>
+              <h3>Items</h3>
+              <ul>${itemsHtml}</ul>
+              <p><em>Placed via web at ${new Date().toLocaleString()}</em></p>
+            `;
+            await fetch('https://us-central1-burlay-s.cloudfunctions.net/sendBookingEmailHttp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: managerEmail,
+                subject: `New Order ${docRef.id} - ${orderData.branchName}`,
+                html
+              })
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Branch email notification error:", e);
+      }
 
       clearCart();
       toast.success("✅ Order placed successfully!");
