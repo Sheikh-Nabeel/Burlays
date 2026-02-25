@@ -31,8 +31,7 @@ const BlogSection = () => {
                     const mappedBlogs = data.blogs.map((blog, index) => ({
                         id: blog.id || index, // Use index as fallback ID if not present
                         title: blog.title || "Untitled",
-                        image: blog.coverImage || "https://via.placeholder.com/400x400?text=No+Image",
-                        fallbackImage: "https://via.placeholder.com/400x400?text=No+Image",
+                        image: blog.coverImage || null,
                         ...blog
                     }));
                     setBlogs(mappedBlogs);
@@ -69,12 +68,15 @@ const BlogSection = () => {
           {blogs.map((blog) => (
             <Link to={`/blog/${blog.id}`} state={{ blog }} key={blog.id} className="group cursor-pointer relative overflow-hidden rounded-xl aspect-square w-full">
               {/* Background Image */}
-              <img 
-                src={blog.image} 
-                onError={(e) => {e.target.src = blog.fallbackImage}}
-                alt={blog.title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
+              {blog.image && (
+                <img 
+                  src={blog.image}
+                  alt={blog.title}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  loading="lazy"
+                />
+              )}
               
               {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>

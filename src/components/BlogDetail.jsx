@@ -37,8 +37,7 @@ const BlogDetail = () => {
                          setBlog({
                             id: foundBlog.id || blogId,
                             title: foundBlog.title || "Untitled",
-                            image: foundBlog.coverImage || "https://via.placeholder.com/800x400?text=No+Image",
-                            fallbackImage: "https://via.placeholder.com/800x400?text=No+Image",
+                            image: foundBlog.coverImage || null,
                             author: foundBlog.author || "Burlays Team",
                             authorImage: foundBlog.authorImage || "https://ui-avatars.com/api/?name=Burlays",
                             date: foundBlog.createdAt?.toDate ? foundBlog.createdAt.toDate().toLocaleDateString() : (foundBlog.createdAt || new Date().toLocaleDateString()),
@@ -103,14 +102,17 @@ const BlogDetail = () => {
         </div>
 
         {/* Featured Image */}
-        <div className="w-full aspect-square rounded-2xl overflow-hidden mb-12">
-            <img 
-                src={blog.image || blog.coverImage} 
-                onError={(e) => {e.target.src = blog.fallbackImage || "https://via.placeholder.com/800x400?text=No+Image"}}
-                alt={blog.title} 
-                className="w-full h-full object-cover"
-            />
-        </div>
+        { (blog.image || blog.coverImage) && (
+          <div className="w-full aspect-square rounded-2xl overflow-hidden mb-12">
+              <img 
+                  src={blog.image || blog.coverImage}
+                  alt={blog.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  loading="lazy"
+              />
+          </div>
+        )}
 
         {/* Content */}
         <div 
