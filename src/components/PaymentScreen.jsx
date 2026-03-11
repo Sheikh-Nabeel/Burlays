@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaCopy } from "react-icons/fa";
 import { useNavigate, useLocation as useRouterLocation } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { toast } from "react-toastify";
@@ -16,6 +16,8 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [placedOrderId, setPlacedOrderId] = useState("");
+  const [copied, setCopied] = useState(false);
 
   // Check auth and prefill phone and address
   useEffect(() => {
@@ -176,7 +178,11 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
 
       clearCart();
       toast.success("✅ Order placed successfully!");
-      navigate(`/track-order`, { replace: true });
+      setPlacedOrderId(docRef.id);
+      setCopied(false);
+      setTimeout(() => {
+        navigate(`/track-order`, { replace: true });
+      }, 2500);
     } catch (err) {
       console.error("Order Error: ", err);
       const errorMessage = err.message || "Something went wrong, please try again.";
@@ -284,6 +290,36 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
             </button>
         </div>
       </div>
+      
+      {placedOrderId && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="text-2xl font-extrabold text-gray-900">Order Placed</div>
+            <div className="text-sm text-gray-500 mt-1">Use this Order ID to track your order:</div>
+            <div className="mt-4 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3">
+              <div className="flex-1 font-mono text-sm text-gray-900 break-all">{placedOrderId}</div>
+              <button
+                aria-label="Copy Order ID"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(placedOrderId);
+                    setCopied(true);
+                    toast.success("Order ID copied");
+                  } catch {
+                    toast.error("Copy failed");
+                  }
+                }}
+                className="w-9 h-9 inline-flex items-center justify-center rounded-lg bg-white border border-gray-200 text-gray-700 hover:text-black hover:border-gray-300 transition"
+              >
+                <FaCopy className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="mt-4 text-xs text-gray-500">
+              {copied ? "Copied. Redirecting to My Orders..." : "Redirecting to My Orders..."}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
