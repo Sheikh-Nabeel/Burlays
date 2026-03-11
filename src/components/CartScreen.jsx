@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useCart } from "../contexts/CartContext";
-import { FaTrash, FaArrowLeft } from "react-icons/fa";
+import { FaTrash, FaArrowLeft, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { Link, useNavigate, useLocation as useRouterLocation } from "react-router-dom";
-import { useLocation } from "../hooks/useLocation";
 import { auth, db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query } from "firebase/firestore";
 
 const COLORS = {
   primary: "#FFC72C",
@@ -22,10 +21,14 @@ const CartScreen = () => {
     updateQuantity,
   } = useCart();
 
-  const { location } = useLocation();
   const routerLocation = useRouterLocation();
   const navigate = useNavigate();
   const [gstPercentage, setGstPercentage] = useState(0);
+  const [menuItems, setMenuItems] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [recoLoading, setRecoLoading] = useState(false);
+  const recoScrollRef = useRef(null);
+  const recoSourceBranchIdRef = useRef(null);
 
   const currencySymbol = "Rs.";
 
@@ -69,6 +72,176 @@ const CartScreen = () => {
     };
     fetchBranchDetails();
   }, []);
+
+  useEffect(() => {
+    const loadMenuItems = async () => {
+      if (cartItems.length === 0) {
+        setMenuItems([]);
+        return;
+      }
+
+      const selectedBranch = JSON.parse(localStorage.getItem("selectedBranch") || "null");
+      if (!selectedBranch?.id) return;
+
+      if (recoSourceBranchIdRef.current === selectedBranch.id && menuItems.length > 0) return;
+      recoSourceBranchIdRef.current = selectedBranch.id;
+
+      const cacheKey = `menuCache_${selectedBranch.id}`;
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        try {
+          const parsed = JSON.parse(cachedData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const flattened = parsed.flatMap((cat) =>
+              (cat.products || []).filter(Boolean).map((prod) => ({
+                ...prod,
+                categoryId: cat.id,
+                categoryName: cat.name,
+              }))
+            );
+            setMenuItems(flattened.filter((p) => p && p.id && p.name));
+            return;
+          }
+        } catch (e) {
+          console.error("Menu cache parse error:", e);
+        }
+      }
+
+      setRecoLoading(true);
+      try {
+        let categoriesRef;
+        if (selectedBranch.cityId) {
+          categoriesRef = collection(
+            db,
+            `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories`
+          );
+        } else {
+          categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
+        }
+
+        const categoriesSnapshot = await getDocs(query(categoriesRef, orderBy("order", "asc")));
+
+        const allItems = [];
+        await Promise.all(
+          categoriesSnapshot.docs.map(async (categoryDoc) => {
+            const categoryData = categoryDoc.data();
+            if (categoryData?.active === false) return;
+
+            const basePath = selectedBranch.cityId
+              ? `cities/${selectedBranch.cityId}/branches/${selectedBranch.id}/categories/${categoryDoc.id}`
+              : `branches/${selectedBranch.id}/categories/${categoryDoc.id}`;
+
+            const productsRef = collection(db, `${basePath}/products`);
+            const dealsRef = collection(db, `${basePath}/deals`);
+
+            const [productsSnapshot, dealsSnapshot] = await Promise.all([
+              getDocs(productsRef),
+              getDocs(dealsRef),
+            ]);
+
+            productsSnapshot.docs.forEach((d) => {
+              const data = d.data();
+              if (data?.inStock === false) return;
+              allItems.push({
+                id: d.id,
+                ...data,
+                categoryId: categoryDoc.id,
+                categoryName: categoryData?.name,
+                isDeal: false,
+              });
+            });
+
+            dealsSnapshot.docs.forEach((d) => {
+              const data = d.data();
+              if (data?.endDate) {
+                const end = data.endDate.toDate ? data.endDate.toDate() : new Date(data.endDate);
+                if (end < new Date()) return;
+              }
+              if (data?.isActive === false) return;
+              allItems.push({
+                id: d.id,
+                ...data,
+                categoryId: categoryDoc.id,
+                categoryName: categoryData?.name,
+                isDeal: true,
+              });
+            });
+          })
+        );
+
+        setMenuItems(allItems.filter((p) => p && p.id && p.name));
+      } catch (error) {
+        console.error("Error loading recommendations menu items:", error);
+      } finally {
+        setRecoLoading(false);
+      }
+    };
+
+    loadMenuItems();
+  }, [cartItems.length, menuItems.length]);
+
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setRecommendations([]);
+      return;
+    }
+    if (!Array.isArray(menuItems) || menuItems.length === 0) {
+      setRecommendations([]);
+      return;
+    }
+
+    const cartIdSet = new Set(cartItems.map((i) => i.id).filter(Boolean));
+    const cartCategorySet = new Set();
+    cartItems.forEach((item) => {
+      const match = menuItems.find((p) => p.id === item.id);
+      if (match?.categoryId) cartCategorySet.add(match.categoryId);
+    });
+
+    const scoreOf = (item) => {
+      let score = 0;
+      if (item?.categoryId && cartCategorySet.has(item.categoryId)) score += 10;
+      const discount = Number(item?.discountPrice || 0);
+      if (discount > 0) score += 2;
+      if (item?.isDeal || item?.dealPrice) score += 1;
+      return score;
+    };
+
+    const sorted = menuItems
+      .filter((p) => p && p.id && !cartIdSet.has(p.id))
+      .sort((a, b) => {
+        const sa = scoreOf(a);
+        const sb = scoreOf(b);
+        if (sa !== sb) return sb - sa;
+        return String(a?.name || "").localeCompare(String(b?.name || ""));
+      })
+      .slice(0, 12);
+
+    setRecommendations(sorted);
+  }, [cartItems, menuItems]);
+
+  const scrollReco = (direction) => {
+    if (!recoScrollRef.current) return;
+    const scrollAmount = 260;
+    recoScrollRef.current.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
+  const getRecoPrice = (item) => {
+    const dealPrice = Number(item?.dealPrice || 0);
+    const discountPrice = Number(item?.discountPrice || 0);
+    const basePrice = Number(item?.price || 0);
+    return dealPrice > 0 ? dealPrice : discountPrice > 0 ? discountPrice : basePrice;
+  };
+
+  const handleRecoClick = (item) => {
+    if (!item?.id) return;
+    const params = new URLSearchParams();
+    if (item.categoryId) params.set("category", item.categoryId);
+    params.set("product", item.id);
+    navigate(`/menu?${params.toString()}`);
+  };
   
   const gstAmount = (total * gstPercentage) / 100;
   const finalTotal = total + gstAmount;
@@ -223,6 +396,99 @@ const CartScreen = () => {
           </div>
         )}
       </div>
+
+      {cartItems.length > 0 && (recoLoading || recommendations.length > 0) && (
+        <div className="max-w-3xl mx-auto px-4 mt-10">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-gray-900">Recommended for you</h2>
+            <button
+              onClick={() => navigate("/menu")}
+              className="text-[#E25C1D] hover:text-[#c44e18] font-semibold text-xs tracking-wider transition-colors"
+            >
+              VIEW ALL
+            </button>
+          </div>
+
+          {recoLoading ? (
+            <div className="bg-white border border-gray-100 rounded-xl p-4 text-sm text-gray-500">
+              Loading recommendations...
+            </div>
+          ) : (
+            <div className="relative group flex items-center gap-2">
+              <button
+                onClick={() => scrollReco("left")}
+                className="z-10 w-10 h-10 bg-white shadow-lg rounded-xl flex-shrink-0 flex items-center justify-center text-gray-600 hover:text-[#FFC72C] transition-colors border border-gray-100"
+              >
+                <FaChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div
+                ref={recoScrollRef}
+                className="flex overflow-x-auto gap-4 py-2 scrollbar-hide scroll-smooth snap-x snap-mandatory px-2 flex-1"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {recommendations.map((item) => (
+                  <div
+                    key={`${item.categoryId || "cat"}-${item.id}`}
+                    onClick={() => handleRecoClick(item)}
+                    className="flex-shrink-0 w-44 cursor-pointer snap-center"
+                  >
+                    <div className="bg-white rounded-xl border border-gray-200 hover:border-[#FFC72C] transition-all duration-300 p-3 h-full flex flex-col shadow-sm hover:shadow-md">
+                      <div className="w-full aspect-square rounded-xl overflow-hidden bg-gray-50">
+                        <img
+                          src={item.imageUrl || item.imagepath || "https://via.placeholder.com/150"}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+
+                      <div className="mt-2 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="text-sm font-bold text-gray-900 line-clamp-2">
+                            {item.name}
+                          </h3>
+                          {item.isDeal && (
+                            <span className="px-2 py-0.5 bg-[#E25C1D] text-white text-[9px] font-bold rounded-full flex-shrink-0">
+                              DEAL
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-[#E25C1D] font-bold text-sm mt-1">
+                          {currencySymbol} {getRecoPrice(item).toLocaleString()}
+                        </p>
+                        {item.categoryName && (
+                          <p className="text-[10px] text-gray-400 mt-1 line-clamp-1">
+                            {item.categoryName}
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRecoClick(item);
+                        }}
+                        className="mt-3 w-full bg-[#FFC72C] text-black font-bold py-2 rounded-lg hover:bg-[#ffcf4b] transition-colors text-sm"
+                      >
+                        ADD
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => scrollReco("right")}
+                className="z-10 w-10 h-10 bg-white shadow-lg rounded-xl flex-shrink-0 flex items-center justify-center text-gray-600 hover:text-[#FFC72C] transition-colors border border-gray-100"
+              >
+                <FaChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Bottom Action Bar */}
       {cartItems.length > 0 && (

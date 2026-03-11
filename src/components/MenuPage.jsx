@@ -26,6 +26,7 @@ const MenuPage = () => {
   const activeCategoryRef = useRef(""); // Ref to track active category without re-renders
   
   const categoryRefs = useRef({});
+  const openedProductFromQueryRef = useRef(null);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -423,6 +424,44 @@ const MenuPage = () => {
        setActiveCategory(categories[0].id);
     }
   }, [searchParams, categories, loading]);
+
+  useEffect(() => {
+    if (loading || categories.length === 0) return;
+
+    const productId = searchParams.get("product");
+    if (!productId) return;
+    if (openedProductFromQueryRef.current === productId) return;
+
+    let foundProduct = null;
+    for (const cat of categories) {
+      if (!cat?.products) continue;
+      const match = cat.products.find((p) => p?.id === productId);
+      if (match) {
+        foundProduct = match;
+        break;
+      }
+    }
+
+    if (!foundProduct) return;
+
+    openedProductFromQueryRef.current = productId;
+    setSelectedProduct(foundProduct);
+    setSelectedVariants({});
+    setSelectedAddons({});
+    setSelectedDealProducts({});
+    setActiveSubProductIndex(0);
+
+    if (foundProduct.isDeal && foundProduct.products && foundProduct.products.length > 0) {
+      setActiveSubProduct(foundProduct.products[0]);
+    } else {
+      setActiveSubProduct(null);
+    }
+
+    const params = new URLSearchParams(searchParams);
+    params.delete("product");
+    const newSearch = params.toString();
+    navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+  }, [categories, loading, location.pathname, navigate, searchParams]);
 
   useEffect(() => {
     const handleScroll = () => {
