@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 
 const CategoriesGrid = () => {
   const [categories, setCategories] = useState([]);
@@ -32,12 +32,13 @@ const CategoriesGrid = () => {
              categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
         }
 
-        const categoriesSnapshot = await getDocs(categoriesRef);
+        const categoriesSnapshot = await getDocs(query(categoriesRef, orderBy("order", "asc")));
 
         const categoriesData = categoriesSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })).filter(cat => cat.active !== false);
+        })).filter(cat => cat.active !== false)
+          .sort((a, b) => (Number(a.order ?? Number.POSITIVE_INFINITY) - Number(b.order ?? Number.POSITIVE_INFINITY)));
         
         setCategories(categoriesData);
       } catch (error) {

@@ -4,7 +4,7 @@ import { useCart } from "../contexts/CartContext";
 import { FaShoppingCart, FaPlus, FaChevronLeft, FaChevronRight, FaSpinner } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { auth, db } from "../firebase";
-import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, orderBy, query } from "firebase/firestore";
 import { toast } from "react-toastify";
 
 const MenuPage = () => {
@@ -255,11 +255,19 @@ const MenuPage = () => {
       // 1. Try to load from cache first for instant feel
       const cacheKey = `menuCache_${selectedBranch.id}`;
       const cachedData = localStorage.getItem(cacheKey);
+      const sortCategoriesByOrder = (cats) => {
+          return [...cats].sort((a, b) => {
+              const orderA = Number(a?.order ?? Number.POSITIVE_INFINITY);
+              const orderB = Number(b?.order ?? Number.POSITIVE_INFINITY);
+              if (orderA !== orderB) return orderA - orderB;
+              return String(a?.name || '').localeCompare(String(b?.name || ''));
+          });
+      };
       if (cachedData) {
           try {
               const parsedCache = JSON.parse(cachedData);
               if (parsedCache && Array.isArray(parsedCache) && parsedCache.length > 0) {
-                  setCategories(parsedCache);
+                  setCategories(sortCategoriesByOrder(parsedCache));
                   setLoading(false); // Show content immediately
               }
           } catch (e) {
@@ -277,7 +285,7 @@ const MenuPage = () => {
              categoriesRef = collection(db, `branches/${selectedBranch.id}/categories`);
         }
 
-        const categoriesSnapshot = await getDocs(categoriesRef);
+        const categoriesSnapshot = await getDocs(query(categoriesRef, orderBy("order", "asc")));
         
         // 1. Map Categories
         let categoriesData = await Promise.all(categoriesSnapshot.docs.map(async (categoryDoc) => {
@@ -358,6 +366,7 @@ const MenuPage = () => {
         }));
 
         categoriesData = categoriesData.filter(cat => cat !== null && cat.products.length > 0);
+        categoriesData = sortCategoriesByOrder(categoriesData);
         
         // Update state
         setCategories(categoriesData);
