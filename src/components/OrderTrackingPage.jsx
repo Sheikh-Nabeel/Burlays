@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FaArrowLeft, FaMapMarkerAlt, FaSpinner } from "react-icons/fa";
 import {
+  collection,
   collectionGroup,
   doc,
   documentId,
@@ -35,13 +36,22 @@ const formatTimestamp = (ts) => {
   return date.toLocaleString();
 };
 
+const extractOrderId = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const withoutQuery = raw.split("?")[0].split("#")[0];
+  const parts = withoutQuery.split("/").filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : raw;
+};
+
 const OrderTrackingPage = () => {
   const navigate = useNavigate();
   const { orderId: orderIdParam } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const initialOrderId = orderIdParam || searchParams.get("orderId") || "";
-  const [inputOrderId, setInputOrderId] = useState(initialOrderId);
+  const rawInitialOrderId = orderIdParam || searchParams.get("orderId") || "";
+  const initialOrderId = extractOrderId(rawInitialOrderId);
+  const [inputOrderId, setInputOrderId] = useState(rawInitialOrderId);
 
   const [loading, setLoading] = useState(false);
   const [docPath, setDocPath] = useState("");
@@ -161,11 +171,13 @@ const OrderTrackingPage = () => {
   const handleSearch = () => {
     const next = String(inputOrderId || "").trim();
     if (!next) return;
+    const normalized = extractOrderId(next);
+    if (!normalized) return;
     if (orderIdParam) {
-      navigate(`/track-order/${encodeURIComponent(next)}`);
+      navigate(`/track-order/${encodeURIComponent(normalized)}`);
     } else {
       const params = new URLSearchParams(searchParams);
-      params.set("orderId", next);
+      params.set("orderId", normalized);
       setSearchParams(params, { replace: true });
     }
   };
