@@ -399,8 +399,8 @@ const CartScreen = () => {
 
       {cartItems.length > 0 && (recoLoading || recommendations.length > 0) && (
         <div className="max-w-3xl mx-auto px-4 mt-10">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Recommended for you</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-extrabold tracking-tight text-gray-900">Recommended for you</h2>
             <button
               onClick={() => navigate("/menu")}
               className="text-[#E25C1D] hover:text-[#c44e18] font-semibold text-xs tracking-wider transition-colors"
@@ -410,58 +410,67 @@ const CartScreen = () => {
           </div>
 
           {recoLoading ? (
-            <div className="bg-white border border-gray-100 rounded-xl p-4 text-sm text-gray-500">
-              Loading recommendations...
+            <div className="relative bg-white border border-gray-100 rounded-2xl p-4">
+              <div className="flex gap-4 overflow-hidden">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="w-48 flex-shrink-0">
+                    <div className="animate-pulse bg-gray-50 border border-gray-200 rounded-xl p-3">
+                      <div className="w-full aspect-square bg-gray-200 rounded-lg" />
+                      <div className="h-3 bg-gray-200 rounded mt-3" />
+                      <div className="h-3 bg-gray-200 rounded mt-2 w-2/3" />
+                      <div className="h-8 bg-gray-200 rounded mt-3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
-            <div className="relative group flex items-center gap-2">
+            <div className="relative bg-white border border-gray-100 rounded-2xl p-3">
               <button
                 onClick={() => scrollReco("left")}
-                className="z-10 w-10 h-10 bg-white shadow-lg rounded-xl flex-shrink-0 flex items-center justify-center text-gray-600 hover:text-[#FFC72C] transition-colors border border-gray-100"
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-white shadow-lg rounded-full flex items-center justify-center text-gray-600 hover:text-[#E25C1D] transition-colors border border-gray-100"
+                aria-label="Previous"
               >
                 <FaChevronLeft className="w-4 h-4" />
               </button>
 
               <div
                 ref={recoScrollRef}
-                className="flex overflow-x-auto gap-4 py-2 scrollbar-hide scroll-smooth snap-x snap-mandatory px-2 flex-1"
+                className="flex overflow-x-auto gap-4 py-2 scrollbar-hide scroll-smooth snap-x snap-mandatory px-6"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
               >
                 {recommendations.map((item) => (
                   <div
                     key={`${item.categoryId || "cat"}-${item.id}`}
                     onClick={() => handleRecoClick(item)}
-                    className="flex-shrink-0 w-44 cursor-pointer snap-center"
+                    className="flex-shrink-0 w-48 cursor-pointer snap-center"
                   >
-                    <div className="bg-white rounded-xl border border-gray-200 hover:border-[#FFC72C] transition-all duration-300 p-3 h-full flex flex-col shadow-sm hover:shadow-md">
-                      <div className="w-full aspect-square rounded-xl overflow-hidden bg-gray-50">
+                    <div className="group bg-white rounded-xl border border-gray-200 hover:border-[#FFC72C] transition-all duration-300 p-3 h-full flex flex-col shadow-sm hover:shadow-md">
+                      <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-[#FFF5D6] to-[#FFE9A8]">
                         <img
                           src={item.imageUrl || item.imagepath || "https://via.placeholder.com/150"}
                           alt={item.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           referrerPolicy="no-referrer"
                         />
+                        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-white/90 text-[#E25C1D] text-[11px] font-bold">
+                          {currencySymbol} {getRecoPrice(item).toLocaleString()}
+                        </div>
+                        {item.isDeal && (
+                          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-[#E25C1D] text-white text-[10px] font-bold">
+                            DEAL
+                          </div>
+                        )}
                       </div>
 
-                      <div className="mt-2 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-sm font-bold text-gray-900 line-clamp-2">
-                            {item.name}
-                          </h3>
-                          {item.isDeal && (
-                            <span className="px-2 py-0.5 bg-[#E25C1D] text-white text-[9px] font-bold rounded-full flex-shrink-0">
-                              DEAL
-                            </span>
-                          )}
-                        </div>
-
-                        <p className="text-[#E25C1D] font-bold text-sm mt-1">
-                          {currencySymbol} {getRecoPrice(item).toLocaleString()}
-                        </p>
+                      <div className="mt-3 flex-1">
+                        <h3 className="text-sm font-bold text-gray-900 line-clamp-2 min-h-[34px]">
+                          {item.name}
+                        </h3>
                         {item.categoryName && (
-                          <p className="text-[10px] text-gray-400 mt-1 line-clamp-1">
+                          <div className="mt-1 text-[10px] font-semibold text-gray-500 tracking-wide">
                             {item.categoryName}
-                          </p>
+                          </div>
                         )}
                       </div>
 
@@ -481,7 +490,8 @@ const CartScreen = () => {
 
               <button
                 onClick={() => scrollReco("right")}
-                className="z-10 w-10 h-10 bg-white shadow-lg rounded-xl flex-shrink-0 flex items-center justify-center text-gray-600 hover:text-[#FFC72C] transition-colors border border-gray-100"
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-white shadow-lg rounded-full flex items-center justify-center text-gray-600 hover:text-[#E25C1D] transition-colors border border-gray-100"
+                aria-label="Next"
               >
                 <FaChevronRight className="w-4 h-4" />
               </button>

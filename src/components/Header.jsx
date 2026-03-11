@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaShoppingCart, FaUser, FaPhone, FaMapMarkerAlt, FaTh, FaSearch, FaMapPin, FaSignOutAlt, FaBriefcase } from "react-icons/fa";
+import { FaShoppingCart, FaUser, FaPhone, FaMapMarkerAlt, FaTh, FaSearch, FaMapPin, FaSignOutAlt, FaBriefcase, FaListAlt } from "react-icons/fa";
 import { CgMenuRight, CgShoppingCart, CgProfile } from "react-icons/cg";
 import { useCart } from "../contexts/CartContext";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -140,6 +140,9 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
           <div className="flex items-center gap-3">
             {/* Desktop View */}
             <div className="hidden md:flex items-center gap-3">
+              <Link to="/track-order" className="relative flex items-center gap-2 px-5 py-2.5 rounded-md font-bold text-sm shadow-sm transition-transform active:scale-95" style={{ backgroundColor: '#FFC72C', color: '#000000' }}>
+                <span>MY ORDERS</span>
+              </Link>
               <Link to="/cart" className="relative flex items-center gap-2 px-5 py-2.5 rounded-md font-bold text-sm shadow-sm transition-transform active:scale-95" style={{ backgroundColor: '#FFC72C', color: '#000000' }}>
                 <FaShoppingCart className="w-4 h-4" />
                 <span>CART</span>
@@ -159,6 +162,9 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
 
             {/* Mobile View */}
             <div className="flex md:hidden items-center gap-4">
+              <Link to="/track-order" className="text-[#E25C1D]" aria-label="My Orders">
+                <FaListAlt className="w-7 h-7" />
+              </Link>
               <Link to="/cart" className="relative flex items-center gap-1 text-[#E25C1D]">
                 <CgShoppingCart className="w-7 h-7" />
                 <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-[#E25C1D] text-white">
@@ -277,6 +283,12 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                   >
                     Blog
                   </button>
+                <button 
+                  onClick={() => { navigate('/track-order'); setIsMenuOpen(false); }}
+                  className="w-full text-left px-6 py-3 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                >
+                  My Orders
+                </button>
                   <button 
                     onClick={() => { navigate('/privacy-policy'); setIsMenuOpen(false); }}
                     className="w-full text-left px-6 py-3 text-sm font-medium text-gray-600 hover:text-black transition-colors"

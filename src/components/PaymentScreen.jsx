@@ -128,6 +128,10 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
       }
       
       const docRef = await addDoc(ordersRef, orderData);
+      await updateDoc(docRef, {
+        orderId: docRef.id,
+        orderNumber: docRef.id
+      });
 
       // 2. Update Customer's orderHistory and save address
       const userRef = doc(db, "Customers", user.uid);
@@ -172,7 +176,7 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
 
       clearCart();
       toast.success("✅ Order placed successfully!");
-      navigate("/");
+      navigate(`/track-order/${docRef.id}`, { replace: true });
     } catch (err) {
       console.error("Order Error: ", err);
       const errorMessage = err.message || "Something went wrong, please try again.";

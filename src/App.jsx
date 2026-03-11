@@ -21,6 +21,7 @@ import BranchLocatorPage from "./components/BranchLocatorPage";
 import BranchDetailsPage from "./components/BranchDetailsPage";
 
 import BranchSelection from "./components/BranchSelection";
+import OrderTrackingPage from "./components/OrderTrackingPage";
 
 const App = () => {
   const [selectedBranch, setSelectedBranch] = React.useState(() => {
@@ -31,7 +32,7 @@ const App = () => {
   const [showBranchSelection, setShowBranchSelection] = React.useState(true);
 
   const location = useLocation();
-  const hideFloatingButtonPaths = ['/login', '/cart', '/PaymentScreen', '/branches', '/menu'];
+  const hideFloatingButtonPaths = ['/login', '/cart', '/PaymentScreen', '/branches', '/menu', '/track-order'];
   const shouldHideFloatingButton = hideFloatingButtonPaths.some(path => location.pathname.startsWith(path));
   const isLoginPage = location.pathname === '/login';
 
@@ -79,8 +80,9 @@ const App = () => {
           path="/category/:categoryId/sub/:subCategoryId"
           element={<ProductsPage />}
         />
+        <Route path="/track-order" element={<OrderTrackingPage />} />
+        <Route path="/track-order/:orderId" element={<OrderTrackingPage />} />
         <Route path="/PaymentScreen" element={<PaymentScreen />} />
-        
       </Routes>
 
       {/* Floating Order Now Button */}
