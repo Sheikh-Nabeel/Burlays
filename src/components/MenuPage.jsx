@@ -208,8 +208,8 @@ const MenuPage = () => {
             dealItems: dealItems, // Store full details
             uniqueId: Date.now()
         };
-        addToCart(cartItem);
-        closeProductModal();
+        const added = addToCart(cartItem);
+        if (added) closeProductModal();
         return;
     }
 
@@ -240,8 +240,8 @@ const MenuPage = () => {
         uniqueId: Date.now() // Unique ID for cart item to distinguish same product with different options
     };
 
-    addToCart(cartItem);
-    closeProductModal();
+    const added = addToCart(cartItem);
+    if (added) closeProductModal();
   };
 
   useEffect(() => {

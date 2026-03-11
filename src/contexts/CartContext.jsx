@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from "react";
 import { useLocation } from "../hooks/useLocation"; // 👈 import your hook
+import { toast } from "react-toastify";
 
 const CartContext = createContext();
 
@@ -10,7 +11,53 @@ export const CartProvider = ({ children }) => {
   const isPakistan = location?.countryCode === "PK";
   const currencySymbol = isPakistan ? "Rs." : "£";
 
+  const toDate = (value) => {
+    if (!value) return null;
+    if (value?.toDate) return value.toDate();
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d;
+  };
+
+  const toMinutesOfDay = (value) => {
+    const d = toDate(value);
+    if (!d) return null;
+    return d.getHours() * 60 + d.getMinutes();
+  };
+
+  const formatTime = (value) => {
+    const d = toDate(value);
+    if (!d) return "";
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const getBranchOpenState = () => {
+    const selectedBranch = JSON.parse(localStorage.getItem("selectedBranch") || "null");
+    if (!selectedBranch?.id) return { ok: false, message: "Please select a branch first." };
+
+    const opening = selectedBranch.OpeningTime ?? selectedBranch.openingTime ?? selectedBranch.opening_time;
+    const closing = selectedBranch.ClosingTime ?? selectedBranch.closingTime ?? selectedBranch.closing_time;
+
+    const openMin = toMinutesOfDay(opening);
+    const closeMin = toMinutesOfDay(closing);
+    if (openMin == null || closeMin == null) return { ok: true, message: "" };
+
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const isOvernight = closeMin < openMin;
+    const isOpen = isOvernight ? nowMin >= openMin || nowMin < closeMin : nowMin >= openMin && nowMin < closeMin;
+
+    if (isOpen) return { ok: true, message: "" };
+    const label = `${formatTime(opening)} - ${formatTime(closing)}`.trim();
+    return { ok: false, message: label ? `Branch is closed. Open hours: ${label}` : "Branch is closed right now." };
+  };
+
   const addToCart = (product) => {
+    const state = getBranchOpenState();
+    if (!state.ok) {
+      toast.error(state.message);
+      return false;
+    }
     setCartItems((prev) => {
       // Use uniqueId if available (for products with variants/addons), otherwise fallback to id
       const productId = product.uniqueId || product.id;
@@ -30,6 +77,7 @@ export const CartProvider = ({ children }) => {
       }
       return [...prev, { ...product, quantity: 1 }];
     });
+    return true;
   };
 
   const removeFromCart = (productId) => {

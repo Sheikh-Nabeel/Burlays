@@ -20,8 +20,8 @@ const ProductsPage = () => {
       navigate('/login', { state: { from: location } });
       return;
     }
-    addToCart(prod);
-    toast.success(`${prod.name} added to cart!`);
+    const added = addToCart(prod);
+    if (added) toast.success(`${prod.name} added to cart!`);
   };
 
   useEffect(() => {

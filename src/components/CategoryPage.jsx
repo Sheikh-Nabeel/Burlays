@@ -23,14 +23,13 @@ const CategoryPage = () => {
         return;
     }
 
-    addToCart({
+    const added = addToCart({
         ...product,
         selectedColor: color
     });
-    
-    toast.success(
-        `${product.name} ${color ? `(${color}) ` : ""}added to cart!`
-    );
+    if (added) {
+      toast.success(`${product.name} ${color ? `(${color}) ` : ""}added to cart!`);
+    }
   };
 
   const [subcategories, setSubcategories] = useState([]);

@@ -16,6 +16,9 @@ import LoginPage from "./components/LoginPage.jsx";
 import BlogDetail from "./components/BlogDetail";
 import JobOpportunities from "./components/JobOpportunities";
 import PrivacyPolicy from "./components/PrivacyPolicy";
+import { db } from "./firebase";
+import { collection, getDocs } from "firebase/firestore";
+import { FaSpinner } from "react-icons/fa";
 
 import BranchLocatorPage from "./components/BranchLocatorPage";
 import BranchDetailsPage from "./components/BranchDetailsPage";
@@ -30,11 +33,62 @@ const App = () => {
   });
 
   const [showBranchSelection, setShowBranchSelection] = React.useState(true);
+  const [branchInitStatus, setBranchInitStatus] = React.useState(() => {
+    const saved = localStorage.getItem("selectedBranch");
+    return saved ? "ready" : "loading";
+  });
 
   const location = useLocation();
   const hideFloatingButtonPaths = ['/login', '/cart', '/PaymentScreen', '/branches', '/menu', '/track-order'];
   const shouldHideFloatingButton = hideFloatingButtonPaths.some(path => location.pathname.startsWith(path));
   const isLoginPage = location.pathname === '/login';
+  const allowRenderWithoutBranchPaths = ["/login", "/privacy-policy", "/branches", "/careers", "/blog"];
+  const allowRenderWithoutBranch = allowRenderWithoutBranchPaths.some((p) => location.pathname.startsWith(p));
+
+  React.useEffect(() => {
+    if (branchInitStatus !== "loading") return;
+    let cancelled = false;
+
+    const autoSelect = async () => {
+      try {
+        const citiesSnap = await getDocs(collection(db, "cities"));
+        const cities = citiesSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((c) => c?.status);
+        const city = cities[0];
+        if (!city?.id) throw new Error("No active cities found");
+
+        const branchesSnap = await getDocs(collection(db, "cities", city.id, "branches"));
+        const branches = branchesSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((b) => b?.status !== false);
+        const branch = branches[0];
+        if (!branch?.id) throw new Error("No active branches found");
+
+        const branchData = { ...branch, cityId: city.id };
+        localStorage.setItem("selectedBranch", JSON.stringify(branchData));
+        if (cancelled) return;
+        setSelectedBranch(branchData);
+        setBranchInitStatus("ready");
+      } catch {
+        if (cancelled) return;
+        setBranchInitStatus("failed");
+      }
+    };
+
+    autoSelect();
+    return () => {
+      cancelled = true;
+    };
+  }, [branchInitStatus]);
+
+  if (!selectedBranch && branchInitStatus === "loading" && !allowRenderWithoutBranch) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <FaSpinner className="animate-spin text-4xl text-[#FFC72C]" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white text-darkSecondary font-serif relative">
@@ -42,7 +96,7 @@ const App = () => {
       {!isLoginPage && <Header />}
       
       {/* Branch Selection Overlay */}
-      {!selectedBranch && showBranchSelection && (
+      {!selectedBranch && branchInitStatus === "failed" && showBranchSelection && !allowRenderWithoutBranch && (
         <BranchSelection 
           onSelectBranch={setSelectedBranch} 
           onClose={() => setShowBranchSelection(false)} 

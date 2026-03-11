@@ -24,8 +24,8 @@ const SingleProduct = ({ product, onBack }) => {
       navigate('/login', { state: { from: location } });
       return;
     }
-    addToCart(product);
-    toast.success("Added to cart!");
+    const added = addToCart(product);
+    if (added) toast.success("Added to cart!");
   };
 
   const categories = [
