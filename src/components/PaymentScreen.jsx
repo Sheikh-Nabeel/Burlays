@@ -100,8 +100,18 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
 
   const getBranchOpenState = () => {
     if (!selectedBranch?.id) return { ok: false, message: "Please select a branch first." };
-    const opening = selectedBranch.OpeningTime ?? selectedBranch.openingTime ?? selectedBranch.opening_time;
-    const closing = selectedBranch.ClosingTime ?? selectedBranch.closingTime ?? selectedBranch.closing_time;
+    const opening =
+      selectedBranch.OpeningTime ??
+      selectedBranch.openingTime ??
+      selectedBranch.opening_time ??
+      selectedBranch["opening time"] ??
+      selectedBranch["Opening Time"];
+    const closing =
+      selectedBranch.ClosingTime ??
+      selectedBranch.closingTime ??
+      selectedBranch.closing_time ??
+      selectedBranch["closing time"] ??
+      selectedBranch["Closing Time"];
     const openMin = toMinutesOfDay(opening);
     const closeMin = toMinutesOfDay(closing);
     if (openMin == null || closeMin == null) return { ok: false, message: "Branch timing is not configured. Please try again later." };
