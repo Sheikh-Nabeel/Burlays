@@ -14,6 +14,25 @@ export const CartProvider = ({ children }) => {
   const toDate = (value) => {
     if (!value) return null;
     if (value?.toDate) return value.toDate();
+    const seconds = value?.seconds ?? value?._seconds;
+    if (typeof seconds === "number") {
+      const nanos = value?.nanoseconds ?? value?._nanoseconds ?? 0;
+      const ms = seconds * 1000 + Math.floor(Number(nanos) / 1e6);
+      const d = new Date(ms);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    if (typeof value === "string") {
+      const match = value.trim().match(/^(\d{1,2}):(\d{2})/);
+      if (match) {
+        const hours = Number(match[1]);
+        const minutes = Number(match[2]);
+        if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
+          const d = new Date();
+          d.setHours(hours, minutes, 0, 0);
+          return d;
+        }
+      }
+    }
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return null;
     return d;
@@ -40,7 +59,7 @@ export const CartProvider = ({ children }) => {
 
     const openMin = toMinutesOfDay(opening);
     const closeMin = toMinutesOfDay(closing);
-    if (openMin == null || closeMin == null) return { ok: true, message: "" };
+    if (openMin == null || closeMin == null) return { ok: false, message: "Branch timing is not configured. Please try again later." };
 
     const now = new Date();
     const nowMin = now.getHours() * 60 + now.getMinutes();
