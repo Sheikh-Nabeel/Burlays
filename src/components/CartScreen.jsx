@@ -27,6 +27,7 @@ const CartScreen = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [recoLoading, setRecoLoading] = useState(false);
+  const [isRecoPaused, setIsRecoPaused] = useState(false);
   const recoScrollRef = useRef(null);
   const recoSourceBranchIdRef = useRef(null);
 
@@ -218,6 +219,36 @@ const CartScreen = () => {
 
     setRecommendations(sorted);
   }, [cartItems, menuItems]);
+
+  useEffect(() => {
+    if (recoLoading) return;
+    if (isRecoPaused) return;
+    if (!Array.isArray(recommendations) || recommendations.length < 2) return;
+
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (prefersReducedMotion) return;
+
+    const intervalId = window.setInterval(() => {
+      const el = recoScrollRef.current;
+      if (!el) return;
+
+      const nearEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 10;
+      if (nearEnd) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+        return;
+      }
+
+      const firstChild = el.firstElementChild;
+      let step = 260;
+      if (firstChild) {
+        const w = firstChild.getBoundingClientRect().width;
+        if (w) step = Math.round(w + 16);
+      }
+      el.scrollBy({ left: step, behavior: "smooth" });
+    }, 3000);
+
+    return () => window.clearInterval(intervalId);
+  }, [isRecoPaused, recoLoading, recommendations]);
 
   const scrollReco = (direction) => {
     if (!recoScrollRef.current) return;
@@ -425,7 +456,13 @@ const CartScreen = () => {
               </div>
             </div>
           ) : (
-            <div className="relative bg-white border border-gray-100 rounded-2xl p-3">
+            <div
+              className="relative bg-white border border-gray-100 rounded-2xl p-3"
+              onMouseEnter={() => setIsRecoPaused(true)}
+              onMouseLeave={() => setIsRecoPaused(false)}
+              onTouchStart={() => setIsRecoPaused(true)}
+              onTouchEnd={() => setIsRecoPaused(false)}
+            >
               <button
                 onClick={() => scrollReco("left")}
                 className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-white shadow-lg rounded-full flex items-center justify-center text-gray-600 hover:text-[#E25C1D] transition-colors border border-gray-100"
