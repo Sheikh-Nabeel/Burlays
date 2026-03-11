@@ -67,8 +67,8 @@ const PrivacyPolicy = () => {
             </p>
             <div className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
               <p className="font-semibold">Burlays Support</p>
-              <p>Email: support@burlays.com</p>
-              <p>Phone: +92 300 1234567</p>
+              <p>Email: Burlaysofficial@gmail.com</p>
+              <p>Phone: +92 331 6333399</p>
             </div>
           </section>
         </div>
