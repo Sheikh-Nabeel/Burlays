@@ -260,6 +260,7 @@ const Header = ({ scrollToSection, homeRef, menuRef, contactRef }) => {
                       className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
                       onClick={() => { 
                         localStorage.removeItem('selectedBranch');
+                        localStorage.setItem("forceBranchSelection", "1");
                         window.location.href = '/';
                       }}
                     >

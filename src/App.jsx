@@ -34,6 +34,8 @@ const App = () => {
 
   const [showBranchSelection, setShowBranchSelection] = React.useState(true);
   const [branchInitStatus, setBranchInitStatus] = React.useState(() => {
+    const force = localStorage.getItem("forceBranchSelection");
+    if (force) return "failed";
     const saved = localStorage.getItem("selectedBranch");
     return saved ? "ready" : "loading";
   });
@@ -98,7 +100,12 @@ const App = () => {
       {/* Branch Selection Overlay */}
       {!selectedBranch && branchInitStatus === "failed" && showBranchSelection && !allowRenderWithoutBranch && (
         <BranchSelection 
-          onSelectBranch={setSelectedBranch} 
+          onSelectBranch={(branch) => {
+            localStorage.removeItem("forceBranchSelection");
+            setSelectedBranch(branch);
+            setBranchInitStatus("ready");
+            setShowBranchSelection(false);
+          }} 
           onClose={() => setShowBranchSelection(false)} 
         />
       )}
