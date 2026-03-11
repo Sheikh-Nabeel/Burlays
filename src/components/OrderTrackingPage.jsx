@@ -59,6 +59,7 @@ const OrderTrackingPage = () => {
   const [error, setError] = useState("");
   const [userOrders, setUserOrders] = useState([]);
   const [userOrdersLoading, setUserOrdersLoading] = useState(false);
+  const [userOrdersError, setUserOrdersError] = useState("");
 
   const steps = useMemo(
     () => ["Pending", "Confirmed", "Preparing", "On the way", "Delivered"],
@@ -91,10 +92,14 @@ const OrderTrackingPage = () => {
       if (legacyBranchSnap.exists()) return legacyBranchRef;
     }
 
-    const groupSnap = await getDocs(
-      query(collectionGroup(db, "orders"), where(documentId(), "==", orderId), limit(1))
-    );
-    if (!groupSnap.empty) return groupSnap.docs[0].ref;
+    try {
+      const groupSnap = await getDocs(
+        query(collectionGroup(db, "orders"), where(documentId(), "==", orderId), limit(1))
+      );
+      if (!groupSnap.empty) return groupSnap.docs[0].ref;
+    } catch {
+      return null;
+    }
 
     return null;
   };
@@ -185,74 +190,129 @@ const OrderTrackingPage = () => {
   useEffect(() => {
     let unsub1 = null;
     let unsub2 = null;
+    let unsub3 = null;
+    let unsub4 = null;
+    let unsubCustomer = null;
     setUserOrdersLoading(true);
+    setUserOrdersError("");
     const ready = () => setUserOrdersLoading(false);
+    const selectedBranch = JSON.parse(localStorage.getItem("selectedBranch") || "null");
+
+    const subscribeForUid = (uid) => {
+      if (!uid) {
+        setUserOrders([]);
+        ready();
+        return;
+      }
+
+      const onErr = (e) => {
+        setUserOrdersError(e?.message || "Failed to load your orders");
+        ready();
+      };
+
+      if (selectedBranch?.id && selectedBranch?.cityId) {
+        const branchOrdersRef = collection(
+          db,
+          "cities",
+          selectedBranch.cityId,
+          "branches",
+          selectedBranch.id,
+          "orders"
+        );
+        const q3 = query(branchOrdersRef, where("userId", "==", uid));
+        unsub3 = onSnapshot(
+          q3,
+          (snap) => {
+            const a = snap.docs.map((d) => ({ id: d.id, ...d.data(), __src: "branch" }));
+            setUserOrders((prev) => {
+              const other = prev.filter((p) => p.__src !== "branch");
+              return [...a, ...other];
+            });
+            ready();
+          },
+          onErr
+        );
+      } else if (selectedBranch?.id) {
+        const legacyOrdersRef = collection(db, "branches", selectedBranch.id, "orders");
+        const q4 = query(legacyOrdersRef, where("userId", "==", uid));
+        unsub4 = onSnapshot(
+          q4,
+          (snap) => {
+            const a = snap.docs.map((d) => ({ id: d.id, ...d.data(), __src: "legacy" }));
+            setUserOrders((prev) => {
+              const other = prev.filter((p) => p.__src !== "legacy");
+              return [...a, ...other];
+            });
+            ready();
+          },
+          onErr
+        );
+      }
+
+      const q2 = query(collection(db, "orders"), where("userId", "==", uid));
+      unsub2 = onSnapshot(
+        q2,
+        (snap) => {
+          const a = snap.docs.map((d) => ({ id: d.id, ...d.data(), __src: "top" }));
+          setUserOrders((prev) => {
+            const other = prev.filter((p) => p.__src !== "top");
+            return [...a, ...other];
+          });
+          ready();
+        },
+        onErr
+      );
+
+      const customerRef = doc(db, "Customers", uid);
+      unsubCustomer = onSnapshot(
+        customerRef,
+        async (snap) => {
+          const data = snap.data() || {};
+          const ids = Array.isArray(data.orderHistory) ? data.orderHistory : [];
+          if (ids.length === 0) return;
+
+          const normalized = ids.map((x) => String(x || "").trim()).filter(Boolean).slice(0, 20);
+          const resolved = await Promise.all(
+            normalized.map(async (id) => {
+              const ref = await resolveOrderDocRef(id);
+              if (!ref) return null;
+              const docSnap = await getDoc(ref);
+              if (!docSnap.exists()) return null;
+              return { id: docSnap.id, ...docSnap.data(), __src: "history" };
+            })
+          );
+
+          const a = resolved.filter(Boolean);
+          if (a.length === 0) return;
+          setUserOrders((prev) => {
+            const other = prev.filter((p) => p.__src !== "history");
+            return [...a, ...other];
+          });
+        },
+        onErr
+      );
+    };
+
     const uid = auth.currentUser?.uid || null;
     if (!uid) {
-      const off = auth.onAuthStateChanged((u) => {
-        if (u?.uid) {
-          const q1 = query(collectionGroup(db, "orders"), where("userId", "==", u.uid));
-          unsub1 = onSnapshot(q1, (snap) => {
-            const a = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-            setUserOrders((prev) => {
-              const other = prev.filter((p) => p.__src !== "group");
-              return [
-                ...a.map((x) => ({ ...x, __src: "group" })),
-                ...other,
-              ];
-            });
-            ready();
-          }, ready);
-          const q2 = query(collection(db, "orders"), where("userId", "==", u.uid));
-          unsub2 = onSnapshot(q2, (snap) => {
-            const a = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-            setUserOrders((prev) => {
-              const other = prev.filter((p) => p.__src !== "top");
-              return [
-                ...a.map((x) => ({ ...x, __src: "top" })),
-                ...other,
-              ];
-            });
-            ready();
-          }, ready);
-        } else {
-          setUserOrders([]);
-          ready();
-        }
-      });
+      const off = auth.onAuthStateChanged((u) => subscribeForUid(u?.uid || null));
       return () => {
         off();
         if (unsub1) unsub1();
         if (unsub2) unsub2();
+        if (unsub3) unsub3();
+        if (unsub4) unsub4();
+        if (unsubCustomer) unsubCustomer();
       };
     }
-    const q1 = query(collectionGroup(db, "orders"), where("userId", "==", uid));
-    unsub1 = onSnapshot(q1, (snap) => {
-      const a = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setUserOrders((prev) => {
-        const other = prev.filter((p) => p.__src !== "group");
-        return [
-          ...a.map((x) => ({ ...x, __src: "group" })),
-          ...other,
-        ];
-      });
-      ready();
-    }, ready);
-    const q2 = query(collection(db, "orders"), where("userId", "==", uid));
-    unsub2 = onSnapshot(q2, (snap) => {
-      const a = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setUserOrders((prev) => {
-        const other = prev.filter((p) => p.__src !== "top");
-        return [
-          ...a.map((x) => ({ ...x, __src: "top" })),
-          ...other,
-        ];
-      });
-      ready();
-    }, ready);
+
+    subscribeForUid(uid);
     return () => {
       if (unsub1) unsub1();
       if (unsub2) unsub2();
+      if (unsub3) unsub3();
+      if (unsub4) unsub4();
+      if (unsubCustomer) unsubCustomer();
     };
   }, []);
   
@@ -313,6 +373,14 @@ const OrderTrackingPage = () => {
             <h2 className="font-bold text-gray-900">Your Orders</h2>
             {userOrdersLoading && <FaSpinner className="animate-spin text-[#FFC72C]" />}
           </div>
+          {auth.currentUser?.uid && (
+            <div className="text-[11px] text-gray-400 mt-2 break-all">
+              UserId: {auth.currentUser.uid}
+            </div>
+          )}
+          {!userOrdersLoading && userOrdersError && (
+            <div className="text-xs text-red-600 mt-2">{userOrdersError}</div>
+          )}
           {dedupedSortedUserOrders.length === 0 ? (
             <div className="text-sm text-gray-500 mt-3">No orders found.</div>
           ) : (
