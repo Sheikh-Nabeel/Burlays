@@ -176,7 +176,7 @@ const CheckoutForm = ({ cartItems, clearCart, getTotalPrice }) => {
 
       clearCart();
       toast.success("✅ Order placed successfully!");
-      navigate(`/track-order/${docRef.id}`, { replace: true });
+      navigate(`/track-order`, { replace: true });
     } catch (err) {
       console.error("Order Error: ", err);
       const errorMessage = err.message || "Something went wrong, please try again.";
